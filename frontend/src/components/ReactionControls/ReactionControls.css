@@ -1,0 +1,65 @@
+.reaction-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  
+    margin-top: 30px;
+  }
+  
+  .reaction-controls h2 {
+    font-size: 18px;
+    color: #444444;
+  }
+  
+  .emotion-buttons,
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .emotion-buttons button,
+  .action-buttons button {
+    padding: 10px 16px;
+    border: 1px solid #cccccc;
+    border-radius: 10px;
+  
+    background-color: white;
+    color: #333333;
+  
+    cursor: pointer;
+  }
+  
+  .emotion-buttons button:hover,
+  .action-buttons button:hover {
+    background-color: #f0e8dc;
+  }
+  
+  .intensity-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  
+    margin-top: 15px;
+    width: 250px;
+  }
+  
+  .intensity-control label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #444444;
+  }
+  
+  .intensity-control input {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #d8a7a7;
+  }
+  
+  .reaction-status {
+    font-size: 13px;
+    color: #777777;
+  }
