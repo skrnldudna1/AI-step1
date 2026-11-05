@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { ChatMessage } from "../../types/chat";
+import type { CharacterReaction } from "../../types/character";
+
 import { sendChatMessage } from "../../api/chatApi";
 
 import "./Chat.css";
 
-function Chat() {
+// 부모 컴포넌트(App.tsx)에서 전달받는 함수
+interface ChatProps {
+  onReaction: (reaction: CharacterReaction) => void;
+}
+
+function Chat({ onReaction }: ChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: crypto.randomUUID(),
@@ -48,12 +55,21 @@ function Chat() {
 
     try {
       // FastAPI 서버에 메시지 전송
-      const reply = await sendChatMessage(trimmedMessage);
+      const response = await sendChatMessage(trimmedMessage);
 
+      console.log("AI 응답:", response.reply);
+      console.log("캐릭터 감정:", response.reaction.emotion);
+      console.log("감정 강도:", response.reaction.intensity);
+      console.log("캐릭터 행동:", response.reaction.action);
+
+      // AI 감정 데이터를 App.tsx로 전달
+      onReaction(response.reaction);
+
+      // AI 답변을 채팅창에 추가
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: reply,
+        content: response.reply,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);

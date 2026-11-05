@@ -15,6 +15,7 @@ function App() {
   const [emotion, setEmotion] = useState<Emotion>('neutral');
   const [action, setAction] = useState<Action>('idle');
   const [intensity, setIntensity] = useState<number>(0.5);
+  const [reactionId, setReactionId] = useState(0);
 
   // 백엔드 연결 상태
   const [serverStatus, setServerStatus] = useState('서버 연결 확인 중...');
@@ -24,6 +25,15 @@ function App() {
     intensity,
     action,
   };
+
+    // AI 응답에 따라 캐릭터 상태 변경
+    const handleAIReaction = (newReaction: CharacterReaction) => {
+      setEmotion(newReaction.emotion);
+      setAction(newReaction.action);
+      setIntensity(newReaction.intensity);
+    
+      setReactionId((prev) => prev + 1);
+    };
 
   // 캐릭터 행동을 1초 후 초기화
   useEffect(() => {
@@ -82,7 +92,7 @@ function App() {
         {serverStatus}
       </p>
 
-      <Character reaction={reaction} />
+      <Character key={reactionId} reaction={reaction} />
 
       <ReactionControls
         emotion={emotion}
@@ -93,7 +103,7 @@ function App() {
         onIntensityChange={setIntensity}
       />
 
-      <Chat />
+      <Chat onReaction={handleAIReaction} />
     </main>
   );
 }

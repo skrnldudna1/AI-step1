@@ -151,7 +151,7 @@
   
   /* 고개 끄덕이기 */
   .action-nod {
-    animation: nod 1s ease-in-out infinite;
+    animation: nod 0.8s ease-in-out 1;
   }
   
   @keyframes nod {
@@ -168,10 +168,10 @@
     }
   }
   /* 좌우 흔들기 */
-.action-shake {
-    animation: shake 0.8s ease-in-out infinite;
+  .action-shake {
+    animation: shake 0.8s ease-in-out 1;
   }
-  
+
   @keyframes shake {
     0%,
     100% {
@@ -189,7 +189,7 @@
   
   /* 통통 튀기 */
   .action-bounce {
-    animation: bounce 0.6s ease-in-out infinite;
+    animation: bounce 0.5s ease-in-out 2;
   }
   
   @keyframes bounce {

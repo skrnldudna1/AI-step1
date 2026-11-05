@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app.services.ai_service import ai_service
+from app.schemas.ai import AIResponse
 
 
 # FastAPI 애플리케이션 생성
@@ -27,10 +28,6 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
 
 
-# 채팅 응답 데이터
-class ChatResponse(BaseModel):
-    reply: str
-
 
 # 기본 API
 @app.get("/")
@@ -50,9 +47,7 @@ def health_check():
 
 
 # 채팅 API
-@app.post("/api/chat", response_model=ChatResponse)
-def chat(request: ChatRequest):
+@app.post("/api/chat", response_model=AIResponse)
+def chat(request: ChatRequest) -> AIResponse:
 
-    reply = ai_service.chat(request.message)
-
-    return ChatResponse(reply=reply)
+    return ai_service.chat(request.message)
