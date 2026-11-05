@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/gpt-companion-banner.png" width="100%" alt="GPT Companion Banner" />
+<img src="./assets/Step1.png" width="100%" alt="Step1.png" />
 
 <br/>
 
