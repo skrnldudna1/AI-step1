@@ -7,9 +7,11 @@ import './Character.css';
 
 interface CharacterProps {
   reaction: CharacterReaction;
+  isThinking: boolean;
 }
 
-function Character({ reaction }: CharacterProps) {
+function Character({ reaction, isThinking }: CharacterProps) {
+  console.log("캐릭터 Thinking 상태:", isThinking);
     const intensity = Math.min(1, Math.max(0, reaction.intensity));
     // 감정 강도를 0~1 범위로 제한
     const bounceHeight = 5 + intensity * 25;
@@ -23,7 +25,7 @@ function Character({ reaction }: CharacterProps) {
   return (
     <div className="character-container">
      <div
-        className={`character-face emotion-${reaction.emotion} action-${reaction.action}`}
+        className={`character-face emotion-${reaction.emotion} action-${reaction.action} ${isThinking ? 'is-thinking' : ''}`}
         style={characterStyle}
 >
         <div className="character-eyes">

@@ -41,7 +41,10 @@
     background-color: #444444;
     border-radius: 50%;
   
-    transition: width 0.3s ease, height 0.3s ease;
+    transition:
+        width 0.35s ease,
+        height 0.35s ease,
+        border-radius 0.35s ease;
   
     transform-origin: center;
     animation: blink 5s infinite;
@@ -61,10 +64,12 @@
     transform: translateX(-50%);
 
     transition:
-        width 0.3s ease,
-        height 0.3s ease,
-        top 0.3s ease,
-        border-width 0.3s ease;
+        width 0.35s ease,
+        height 0.35s ease,
+        top 0.35s ease,
+        border-width 0.35s ease,
+        border-radius 0.35s ease,
+        border-color 0.35s ease;
   }
   /* 기쁨 */
 .emotion-happy .character-mouth {
@@ -202,3 +207,32 @@
       transform: translateY(var(--bounce-height));
     }
   }
+
+  /* AI 응답 대기 중 */
+.character-face.is-thinking {
+  animation: thinking 1.6s ease-in-out infinite;
+}
+
+/* 생각하는 움직임 */
+@keyframes thinking {
+  0%, 100% {
+    transform: rotate(0deg) translateY(0);
+  }
+
+  25% {
+    transform: rotate(-6deg) translateY(-3px);
+  }
+
+  75% {
+    transform: rotate(6deg) translateY(-3px);
+  }
+}
+
+/* 생각하는 표정 */
+.character-face.is-thinking .character-mouth {
+  width: 20px;
+  height: 12px;
+  border-bottom: 3px solid #444444;
+  border-top: none;
+  border-radius: 50%;
+}

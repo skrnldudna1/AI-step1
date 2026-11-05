@@ -10,9 +10,10 @@ import "./Chat.css";
 // 부모 컴포넌트(App.tsx)에서 전달받는 함수
 interface ChatProps {
   onReaction: (reaction: CharacterReaction) => void;
+  onLoadingChange: (isLoading: boolean) => void;
 }
 
-function Chat({ onReaction }: ChatProps) {
+function Chat({ onReaction, onLoadingChange }: ChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: crypto.randomUUID(),
@@ -52,10 +53,12 @@ function Chat({ onReaction }: ChatProps) {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    onLoadingChange(true);
 
     try {
       // FastAPI 서버에 메시지 전송
       const response = await sendChatMessage(trimmedMessage);
+      // Thinking Animation 테스트용 (2초 대기)
 
       console.log("AI 응답:", response.reply);
       console.log("캐릭터 감정:", response.reaction.emotion);
@@ -64,6 +67,7 @@ function Chat({ onReaction }: ChatProps) {
 
       // AI 감정 데이터를 App.tsx로 전달
       onReaction(response.reaction);
+    
 
       // AI 답변을 채팅창에 추가
       const assistantMessage: ChatMessage = {
@@ -85,6 +89,7 @@ function Chat({ onReaction }: ChatProps) {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      onLoadingChange(false);
     }
   };
 

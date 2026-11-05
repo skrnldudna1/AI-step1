@@ -16,6 +16,7 @@ function App() {
   const [action, setAction] = useState<Action>('idle');
   const [intensity, setIntensity] = useState<number>(0.5);
   const [reactionId, setReactionId] = useState(0);
+  const [isThinking, setIsThinking] = useState(false);
 
   // 백엔드 연결 상태
   const [serverStatus, setServerStatus] = useState('서버 연결 확인 중...');
@@ -92,7 +93,11 @@ function App() {
         {serverStatus}
       </p>
 
-      <Character key={reactionId} reaction={reaction} />
+      <Character
+        key={reactionId}
+        reaction={reaction}
+        isThinking={isThinking}
+      />
 
       <ReactionControls
         emotion={emotion}
@@ -103,7 +108,10 @@ function App() {
         onIntensityChange={setIntensity}
       />
 
-      <Chat onReaction={handleAIReaction} />
+      <Chat
+        onReaction={handleAIReaction}
+        onLoadingChange={setIsThinking}
+      />
     </main>
   );
 }
