@@ -33,6 +33,17 @@
     transform: translateX(-50%);
     
   }
+  /* 눈의 위치와 움직임을 담당 */
+.eye-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 24px;
+
+  transform-origin: center;
+}
   
   .character-eye {
     width: 12px;
@@ -42,9 +53,11 @@
     border-radius: 50%;
   
     transition:
-        width 0.35s ease,
-        height 0.35s ease,
-        border-radius 0.35s ease;
+      width 0.35s ease,
+      height 0.35s ease,
+      border-radius 0.35s ease,
+      background-color 0.35s ease,
+      border-color 0.35s ease;
   
     transform-origin: center;
     animation: blink 5s infinite;
@@ -70,6 +83,7 @@
         border-width 0.35s ease,
         border-radius 0.35s ease,
         border-color 0.35s ease;
+        background-color 0.35s ease;
   }
   /* 기쁨 */
 .emotion-happy .character-mouth {
@@ -78,6 +92,18 @@
     border-bottom: 5px solid #444444;
     border-radius: 50%;
   }
+
+  /* 기쁠 때 웃는 눈 */
+.emotion-happy .character-eye {
+  width: 18px;
+  height: 10px;
+
+  background-color: transparent;
+
+  border-top: 3px solid #444444;
+  border-radius: 50% 50% 0 0;
+
+}
   
   /* 슬픔 */
   .emotion-sad .character-mouth {
@@ -89,11 +115,33 @@
     border-radius: 50%;
   }
   
-  /* 놀람 */
-  .emotion-surprised .character-eye {
-    width: 16px;
-    height: 22px;
+/* 놀랐을 때 동그란 눈 */
+.emotion-surprised .character-eye {
+  width: 20px;
+  height: 24px;
+
+  border-radius: 50%;
+}
+
+/* 놀라는 움직임 */
+.emotion-surprised .eye-wrapper {
+  animation: surprised-eyes 0.4s ease-out;
+}
+
+/* 눈이 커지는 애니메이션 */
+@keyframes surprised-eyes {
+  0% {
+    transform: scale(0.7);
   }
+
+  60% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
   
   .emotion-surprised .character-mouth {
     width: 25px;
@@ -192,16 +240,43 @@
     }
   }
   
-  /* 통통 튀기 */
-  .action-bounce {
-    animation: bounce 0.5s ease-in-out 2;
+ /* 통통 튀는 움직임 */
+.action-bounce {
+  animation: bounce 0.9s ease-out 1;
+}
+
+/* 점프 후 탄성 있게 착지 */
+@keyframes bounce {
+  /* 시작 */
+  0% {
+    transform: translateY(0) scale(1, 1);
   }
-  
-  @keyframes bounce {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
+
+  /* 점프 직전 살짝 찌그러짐 */
+  15% {
+    transform: translateY(0) scale(1.08, 0.92);
+  }
+
+  /* 위로 점프 */
+  40% {
+    transform: translateY(var(--bounce-height)) scale(0.95, 1.05);
+  }
+
+  /* 착지하면서 찌그러짐 */
+  65% {
+    transform: translateY(0) scale(1.1, 0.9);
+  }
+
+  /* 살짝 반동 */
+  80% {
+    transform: translateY(-5px) scale(0.98, 1.02);
+  }
+
+  /* 원래 모습으로 복귀 */
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
   
     50% {
       transform: translateY(var(--bounce-height));
@@ -235,4 +310,76 @@
   border-bottom: 3px solid #444444;
   border-top: none;
   border-radius: 50%;
+}
+
+/* 슬플 때 눈 모양 */
+.emotion-sad .character-eye {
+  width: 14px;
+  height: 16px;
+
+  border-radius: 50%;
+}
+
+/* 왼쪽 눈 기울기 */
+.emotion-sad .eye-wrapper:first-child {
+  transform: rotate(-15deg);
+}
+
+/* 오른쪽 눈 기울기 */
+.emotion-sad .eye-wrapper:last-child {
+  transform: rotate(15deg);
+}
+
+/* 생각하는 동안 눈 모양 */
+.character-face.is-thinking .character-eye {
+  width: 12px;
+  height: 12px;
+
+  border-radius: 50%;
+  background-color: #444444;
+  border: none;
+}
+
+/* 생각하는 동안 시선 이동 */
+.character-face.is-thinking .eye-wrapper {
+  animation: thinking-eyes 1.6s ease-in-out infinite;
+}
+
+/* 생각할 때 눈이 위아래로 움직임 */
+@keyframes thinking-eyes {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+/* AI가 말하는 동안 입 모양 */
+.character-face.is-talking .character-mouth {
+  top: 120px;
+  width: 28px;
+  height: 18px;
+
+  border: 3px solid #444444;
+  border-radius: 50%;
+  background-color: #9b5b5b;
+
+  animation: talking-mouth 0.4s ease-in-out infinite;
+}
+
+/* 입을 열고 닫는 애니메이션 */
+@keyframes talking-mouth {
+  0%, 100% {
+    transform: translateX(-50%) scaleY(0.2);
+  }
+
+  35% {
+    transform: translateX(-50%) scaleY(1);
+  }
+
+  70% {
+    transform: translateX(-50%) scaleY(0.5);
+  }
 }
