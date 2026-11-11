@@ -35,15 +35,24 @@ AI의 대화와 감정을 2D 캐릭터의 표정과 움직임으로 표현하는
 - **2D Animation** — 감정 강도에 따른 캐릭터 움직임
 - **Manual Controls** — 표정 및 행동 수동 제어
 
-### Roadmap
+## Development Roadmap
 
 - [x] Chat UI & Backend
 - [x] Mock AI Integration
 - [x] Emotion-driven Animation
+- [x] Character Selection
+- [x] Pomeranian Character
+  - [x] PNG Part-based Rendering
+  - [x] Eye Blinking
+  - [x] Emotion-based Facial Expressions
+  - [x] Talking Animation
+  - [x] Emotion-based Body Animation
+  - [x] Smooth Expression Transitions
+  - [x] Emotion-based Tail Animation
 - [ ] LLM Integration
 - [ ] Character Customization
 - [ ] Voice Interaction
-- [ ] Desktop Application
+- [ ] Desktop Application (Electron)
 
 ---
 
