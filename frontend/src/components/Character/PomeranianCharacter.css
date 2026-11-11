@@ -1,0 +1,193 @@
+.pomeranian-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 350px;
+  }
+  
+  .pomeranian-character {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    flex-shrink: 0;
+    animation: pomeranian-breathing 3s ease-in-out infinite;
+  }
+  
+  .pomeranian-part {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+  }
+  
+  .pomeranian-tail {
+    z-index: 1;
+    transform-origin: 25% 75%;
+    animation: pomeranian-tail-wag 1.5s ease-in-out infinite;
+  }
+  
+  .pomeranian-base {
+    z-index: 2;
+  }
+  
+  .pomeranian-eyes,
+  .pomeranian-nose,
+  .pomeranian-mouth {
+    z-index: 3;
+  }
+  
+  @keyframes pomeranian-breathing {
+    0%, 100% {
+      transform: translateY(0);
+    }
+  
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+  
+  @keyframes pomeranian-tail-wag {
+    0%, 100% {
+      transform: rotate(-5deg);
+    }
+  
+    50% {
+      transform: rotate(5deg);
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .pomeranian-character,
+    .pomeranian-tail {
+      animation: none;
+    }
+  }
+
+  /* 🐶 행복: 가볍게 통통 뛰기 */
+.pomeranian-character.emotion-happy {
+    animation: pomeranian-happy 0.7s ease-in-out infinite;
+  }
+  
+  /* 🐶 신남: 빠르게 뛰기 */
+  .pomeranian-character.emotion-excited {
+    animation: pomeranian-excited 0.45s ease-in-out infinite;
+  }
+  
+  /* 🐶 놀람: 움찔하기 */
+  .pomeranian-character.emotion-surprised {
+    animation: pomeranian-surprised 0.45s ease-out 1;
+  }
+  
+  /* 🐶 슬픔: 몸을 살짝 낮추기 */
+  .pomeranian-character.emotion-sad {
+    animation: pomeranian-sad 2.5s ease-in-out infinite;
+  }
+  
+  @keyframes pomeranian-happy {
+    0%, 100% {
+      transform: translateY(0);
+    }
+  
+    50% {
+      transform: translateY(-12px);
+    }
+  }
+  
+  @keyframes pomeranian-excited {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+  
+    25% {
+      transform: translateY(-15px) rotate(-3deg);
+    }
+  
+    75% {
+      transform: translateY(-15px) rotate(3deg);
+    }
+  }
+  
+  @keyframes pomeranian-surprised {
+    0% {
+      transform: scale(1);
+    }
+  
+    35% {
+      transform: scale(1.08) translateY(-8px);
+    }
+  
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes pomeranian-sad {
+    0%, 100% {
+      transform: translateY(5px) scaleY(0.97);
+    }
+  
+    50% {
+      transform: translateY(7px) scaleY(0.95);
+    }
+  }
+  
+  /* 움직임 최소화 설정을 사용하는 경우 */
+  @media (prefers-reduced-motion: reduce) {
+    .pomeranian-character.emotion-happy,
+    .pomeranian-character.emotion-excited,
+    .pomeranian-character.emotion-surprised,
+    .pomeranian-character.emotion-sad {
+      animation: none;
+    }
+  }
+
+  /* ========================================
+   🐶 부드러운 표정 전환
+======================================== */
+
+/* 눈 기본 상태 */
+.pomeranian-eyes {
+    opacity: 0;
+    transition:
+      opacity 180ms ease-in-out,
+      transform 180ms ease-in-out;
+  
+    transform: scaleY(0.92);
+    transform-origin: center 42%;
+  }
+  
+  /* 선택된 눈 */
+  .pomeranian-eyes.is-active {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  
+  /* 입 기본 상태 */
+  .pomeranian-mouth {
+    opacity: 0;
+    transition:
+      opacity 150ms ease-in-out,
+      transform 150ms ease-in-out;
+  
+    transform: scale(0.96);
+    transform-origin: center 45%;
+  }
+  
+  /* 선택된 입 */
+  .pomeranian-mouth.is-active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  /* 움직임 최소화 설정 */
+  @media (prefers-reduced-motion: reduce) {
+    .pomeranian-eyes,
+    .pomeranian-mouth {
+      transition: none;
+    }
+  }

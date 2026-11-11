@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import Character from './components/Character/Character';
+import PomeranianCharacter from './components/Character/PomeranianCharacter';
 import ReactionControls from './components/ReactionControls/ReactionControls';
 import Chat from './components/Chat/Chat';
 
@@ -50,7 +51,15 @@ function App() {
     try {
       const saved = localStorage.getItem('gpt-companion-character');
 
-      return saved === 'illustration' ? 'illustration' : 'basic';
+      if (
+        saved === 'basic' ||
+        saved === 'illustration' ||
+        saved === 'pomeranian'
+      ) {
+        return saved;
+      }
+
+      return 'basic';
     } catch {
       return 'basic';
     }
@@ -198,7 +207,26 @@ function App() {
   }, []);
 
   // ========================================
-  // 9. 화면 렌더링
+  // 9. 캐릭터 선택 버튼 스타일
+  // ========================================
+
+  const characterButtonStyle = (type: CharacterType) => ({
+    padding: '10px 16px',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    border:
+      characterType === type
+        ? '2px solid #8b9bb4'
+        : '1px solid #ddd',
+    backgroundColor:
+      characterType === type
+        ? '#e8edf5'
+        : '#ffffff',
+    color: '#333333',
+  });
+
+  // ========================================
+  // 10. 화면 렌더링
   // ========================================
 
   return (
@@ -227,50 +255,37 @@ function App() {
           justifyContent: 'center',
           gap: '12px',
           margin: '20px 0',
+          flexWrap: 'wrap',
         }}
       >
+        {/* 기본 캐릭터 */}
         <button
           type="button"
           onClick={() => handleCharacterChange('basic')}
           aria-pressed={characterType === 'basic'}
-          style={{
-            padding: '10px 16px',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            border:
-              characterType === 'basic'
-                ? '2px solid #8b9bb4'
-                : '1px solid #ddd',
-            backgroundColor:
-              characterType === 'basic'
-                ? '#e8edf5'
-                : '#ffffff',
-            color: '#333333',
-          }}
+          style={characterButtonStyle('basic')}
         >
           ⚪ 기본 캐릭터
         </button>
 
+        {/* 일러스트 캐릭터 */}
         <button
           type="button"
           onClick={() => handleCharacterChange('illustration')}
           aria-pressed={characterType === 'illustration'}
-          style={{
-            padding: '10px 16px',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            border:
-              characterType === 'illustration'
-                ? '2px solid #8b9bb4'
-                : '1px solid #ddd',
-            backgroundColor:
-              characterType === 'illustration'
-                ? '#e8edf5'
-                : '#ffffff',
-            color: '#333333',
-          }}
+          style={characterButtonStyle('illustration')}
         >
           🎨 일러스트 캐릭터
+        </button>
+
+        {/* 포메라니안 */}
+        <button
+          type="button"
+          onClick={() => handleCharacterChange('pomeranian')}
+          aria-pressed={characterType === 'pomeranian'}
+          style={characterButtonStyle('pomeranian')}
+        >
+          🐶 포메라니안
         </button>
       </div>
 
@@ -278,13 +293,20 @@ function App() {
           AI 캐릭터
       ======================================== */}
 
-      <Character
-        characterType={characterType}
-        reaction={reaction}
-        isThinking={isThinking}
-        isTalking={isTalking}
-        reactionId={reactionId}
-      />
+      {characterType === 'pomeranian' ? (
+            <PomeranianCharacter
+            emotion={emotion}
+            isTalking={isTalking}
+          />
+          ) : (
+        <Character
+          characterType={characterType}
+          reaction={reaction}
+          isThinking={isThinking}
+          isTalking={isTalking}
+          reactionId={reactionId}
+        />
+      )}
 
       {/* ========================================
           감정 및 행동 테스트 버튼

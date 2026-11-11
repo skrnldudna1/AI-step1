@@ -8,4 +8,4 @@ export interface CharacterReaction {
   intensity: number;
   action: Action;
 }
-export type CharacterType = 'basic' | 'illustration';
+export type CharacterType = 'basic' | 'illustration'| 'pomeranian';

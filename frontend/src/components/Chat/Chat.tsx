@@ -11,9 +11,14 @@ import "./Chat.css";
 interface ChatProps {
   onReaction: (reaction: CharacterReaction) => void;
   onLoadingChange: (isLoading: boolean) => void;
+  onTalkingStart: (text: string) => void;
 }
 
-function Chat({ onReaction, onLoadingChange }: ChatProps) {
+function Chat({
+    onReaction,
+    onLoadingChange,
+    onTalkingStart,
+  }: ChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: crypto.randomUUID(),
@@ -58,7 +63,9 @@ function Chat({ onReaction, onLoadingChange }: ChatProps) {
     try {
       // FastAPI 서버에 메시지 전송
       const response = await sendChatMessage(trimmedMessage);
+
       // Thinking Animation 테스트용 (2초 대기)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       console.log("AI 응답:", response.reply);
       console.log("캐릭터 감정:", response.reaction.emotion);
@@ -66,10 +73,9 @@ function Chat({ onReaction, onLoadingChange }: ChatProps) {
       console.log("캐릭터 행동:", response.reaction.action);
 
       // AI 감정 데이터를 App.tsx로 전달
-      onReaction(response.reaction);
-    
+onReaction(response.reaction);
 
-      // AI 답변을 채팅창에 추가
+// AI 답변을 채팅창에 추가
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -77,6 +83,11 @@ function Chat({ onReaction, onLoadingChange }: ChatProps) {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // AI가 말하기 시작했다고 App.tsx에 알림
+      onTalkingStart(response.reply);
+
+
     } catch (error) {
       console.error("채팅 API 오류:", error);
 
