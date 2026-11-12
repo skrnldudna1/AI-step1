@@ -42,7 +42,7 @@ function App() {
     '서버 연결 확인 중...'
   );
 
-  // ========================================
+    // ========================================
   // 2. 캐릭터 선택 상태 관리
   // ========================================
 
@@ -65,6 +65,11 @@ function App() {
     }
   });
 
+  // Electron 데스크톱 캐릭터 창에 선택 정보 전달
+  useEffect(() => {
+    window.step1?.selectCharacter(characterType);
+  }, [characterType]);
+
   // 캐릭터 변경 및 선택값 저장
   const handleCharacterChange = (type: CharacterType) => {
     setCharacterType(type);
@@ -75,7 +80,7 @@ function App() {
       // 저장이 불가능해도 캐릭터 전환은 정상 작동
     }
   };
-
+  
   // 캐릭터에게 전달할 감정 데이터
   const reaction: CharacterReaction = {
     emotion,
