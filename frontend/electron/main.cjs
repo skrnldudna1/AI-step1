@@ -25,6 +25,19 @@ ipcMain.on('character:select', (_event, characterType) => {
   );
 });
 
+// ========================================
+// AI 감정 및 애니메이션 동기화
+// ========================================
+
+ipcMain.on('character:reaction', (_event, reactionState) => {
+    if (!reactionState || typeof reactionState !== 'object') return;
+  
+    characterWindow?.webContents.send(
+      'character:reaction-changed',
+      reactionState
+    );
+  });
+
 ipcMain.handle('character:get', () => {
   return selectedCharacter;
 });

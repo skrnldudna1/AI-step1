@@ -1,4 +1,11 @@
-import type { CharacterType } from './character';
+import type { CharacterType, CharacterReaction } from './character';
+
+interface ReactionState {
+  reaction: CharacterReaction;
+  isThinking: boolean;
+  isTalking: boolean;
+  reactionId: number;
+}
 
 interface Step1API {
   selectCharacter: (characterType: CharacterType) => void;
@@ -7,6 +14,12 @@ interface Step1API {
 
   onCharacterChanged: (
     callback: (characterType: CharacterType) => void
+  ) => () => void;
+
+  sendReaction: (state: ReactionState) => void;
+
+  onReactionChanged: (
+    callback: (state: ReactionState) => void
   ) => () => void;
 }
 

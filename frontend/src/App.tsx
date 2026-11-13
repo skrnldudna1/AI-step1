@@ -80,13 +80,37 @@ function App() {
       // 저장이 불가능해도 캐릭터 전환은 정상 작동
     }
   };
-  
+
   // 캐릭터에게 전달할 감정 데이터
   const reaction: CharacterReaction = {
     emotion,
     intensity,
     action,
   };
+
+  // ========================================
+// Electron 데스크톱 캐릭터 감정 동기화
+// ========================================
+
+useEffect(() => {
+  window.step1?.sendReaction({
+    reaction: {
+      emotion,
+      intensity,
+      action,
+    },
+    isThinking,
+    isTalking,
+    reactionId,
+  });
+}, [
+  emotion,
+  intensity,
+  action,
+  isThinking,
+  isTalking,
+  reactionId,
+]);
 
   // ========================================
   // 3. AI 응답에 따른 감정 변경

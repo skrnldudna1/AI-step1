@@ -40,31 +40,48 @@ AI의 대화와 감정을 2D 캐릭터의 표정과 움직임으로 표현하는
 ## Development Roadmap
 
 - [x] Chat UI & Backend
-- [x] Mock AI Integration
-- [x] Emotion-driven Animation
-- [x] Character Selection
-- [x] Pomeranian Character
-  - [x] PNG Part-based Rendering
-  - [x] Eye Blinking
-  - [x] Emotion-based Facial Expressions
-  - [x] Talking Animation
-  - [x] Emotion-based Body Animation
-  - [x] Smooth Expression Transitions
-  - [x] Emotion-based Tail Animation
-- [ ] LLM Integration
-- [ ] Character Customization
-- [ ] Voice Interaction
-- [ ] Desktop Application (Electron)
-  - [x] Electron Integration
-  - [x] Transparent Character Window
-  - [x] Always-on-top Character
-  - [x] Draggable Character Window
-  - [x] Character Selection Synchronization
-  - [ ] Emotion & Talking Synchronization
-  - [ ] Toggleable Chat Window
-  - [ ] Transparent Area Click-through
-  - [ ] macOS & Windows Packaging
 
+- [x] Mock AI Integration
+
+- [x] Emotion-driven Animation
+
+- [x] Character Selection
+
+- [x] Pomeranian Character
+
+  - [x] PNG Part-based Rendering
+
+  - [x] Eye Blinking & Facial Expressions
+
+  - [x] Talking Animation
+
+  - [x] Emotion-based Body & Tail Animation
+
+  - [x] Smooth Expression Transitions
+
+- [ ] LLM Integration
+
+- [ ] Character Customization
+
+- [ ] Voice Interaction
+
+- [ ] Desktop Application (Electron)
+
+  - [x] Electron Integration
+
+  - [x] Transparent & Always-on-top Character Window
+
+  - [x] Draggable Character Window
+
+  - [x] Character Selection Synchronization
+
+  - [x] Emotion & Talking Synchronization
+
+  - [ ] Toggleable Chat Window
+
+  - [ ] Transparent Area Click-through
+
+  - [ ] macOS & Windows Packaging
 ---
 
 <div align="center">
