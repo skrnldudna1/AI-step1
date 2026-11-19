@@ -1,19 +1,16 @@
 <div align="center">
 
-<img src="./assets/Step1.png" width="100%" alt="GPT Companion" />
+<img src="./assets/Step1.png" width="100%" alt="Step1" />
 
 <br/>
 
-# GPT Companion
+**A little closer to being alive.**
 
-**Your AI, Your Character.**
-
-AI의 대화와 감정을 2D 캐릭터의 표정과 움직임으로 표현하는  
-인터랙티브 AI 컴패니언 프로젝트
+대화하고, 감정을 표현하고, 일상을 함께하는 AI.
 
 <br/>
 
-![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
@@ -22,37 +19,88 @@ AI의 대화와 감정을 2D 캐릭터의 표정과 움직임으로 표현하는
 
 </div>
 
----
+<br/>
 
-### Overview
+## 01 — About
 
-**GPT Companion**은 AI의 응답을 캐릭터의 감정과 움직임으로 시각화하는 프로젝트
+**Step1** is an interactive AI desktop companion.
 
-사용자가 원하는 이미지로 자신만의 캐릭터를 생성하고,
-캐릭터와 상호작용하는 새로운 AI 경험을 목표
+텍스트로 존재하는 AI에게 형체를 부여하고,
+대화와 감정을 캐릭터의 표정과 움직임으로 표현합니다.
 
-### Features
+사용자가 원하는 캐릭터와 일상을 공유하는
+새로운 AI 인터랙션을 만들어갑니다.
 
-- **AI Chat** — React · FastAPI 기반 채팅
-- **Emotion Response** — AI 응답에 따른 감정 및 표정 변화
-- **2D Animation** — 감정 강도에 따른 캐릭터 움직임
-- **Manual Controls** — 표정 및 행동 수동 제어
-- **Desktop Companion** — Electron 기반 데스크톱 캐릭터
-- **Character Upload** — 사용자 이미지 업로드 및 분석
-- **Automatic Rigging** — 얼굴 파츠 자동 인식 및 분리
-- **Image Restoration** — OpenCV 기반 이미지 복원
-- **Dynamic Rendering** — JSON 기반 캐릭터 자동 조립
-- **Automatic Blinking** — 생성된 캐릭터의 자동 눈 깜빡임
+<br/>
 
-### Automatic Rigging Pipeline
+## 02 — Features
+
+| Feature | Description |
+| :--- | :--- |
+| Conversation | AI와의 실시간 텍스트 대화 |
+| Emotion | 대화에 따른 감정 및 표정 변화 |
+| Animation | 캐릭터의 움직임과 눈 깜빡임 |
+| Desktop | 바탕화면에서 함께하는 AI 캐릭터 |
+| Auto Rigging | 이미지 기반 자동 캐릭터 리깅 |
+| Customization | 나만의 캐릭터 생성 · 개발 중 |
+
+<br/>
+
+## 03 — How it works
 
 ```mermaid
-graph TD
-    A[Image Upload] --> B[Image Analysis]
-    B --> C[Feature Detection]
-    C --> D[Part Classification]
-    D --> E[Part Extraction]
-    E --> F[Image Restoration]
-    F --> G[JSON Rig Generation]
-    G --> H[Character Rendering]
-    H --> I[Animation]
+flowchart LR
+    A[Conversation] --> B[Emotion]
+    B --> C[Reaction]
+    C --> D[Character]
+```
+
+### Automatic Character Rigging
+
+정적인 이미지에 움직임을 부여합니다.
+
+```mermaid
+flowchart TD
+    A[Image Upload] --> B[Feature Detection]
+    B --> C[Part Extraction]
+    C --> D[Image Restoration]
+    D --> E[Rig Generation]
+    E --> F[Animation]
+```
+
+<br/>
+
+## 04 — Development
+
+| Module | Status |
+| :--- | :--- |
+| Chat & Backend | Implemented |
+| Emotion System | Implemented |
+| Character Animation | Implemented |
+| Desktop Companion | Implemented |
+| Automatic Rigging | Prototype |
+| Custom Character Integration | Planned |
+| LLM Integration | Planned |
+| Voice Interaction | Planned |
+
+[View Development Roadmap](./ROADMAP.md)
+
+<br/>
+
+> Currently using a Mock AI Provider.
+> Automatic rigging is experimental and uses
+> rule-based computer vision.
+
+<br/>
+
+---
+
+<div align="center">
+
+<sub>STEP1 — AI COMPANION PROJECT</sub>
+
+<br/>
+
+*Making AI feel more alive.*
+
+</div>
