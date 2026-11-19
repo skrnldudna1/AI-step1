@@ -8,6 +8,13 @@ interface ReactionState {
 }
 
 interface Step1API {
+    toggleChat: () => void;
+
+    moveCharacter: (position: {
+        dx: number;
+        dy: number;
+      }) => void;
+
   selectCharacter: (characterType: CharacterType) => void;
 
   getCharacter: () => Promise<CharacterType>;

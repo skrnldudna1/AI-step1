@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
+import CharacterUploader from './components/CharacterUploader/CharacterUploader';
+
 import Character from './components/Character/Character';
 import PomeranianCharacter from './components/Character/PomeranianCharacter';
 import ReactionControls from './components/ReactionControls/ReactionControls';
@@ -317,6 +319,8 @@ useEffect(() => {
           🐶 포메라니안
         </button>
       </div>
+      
+      <CharacterUploader />
 
       {/* ========================================
           AI 캐릭터

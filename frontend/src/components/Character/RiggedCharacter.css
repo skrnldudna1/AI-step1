@@ -1,0 +1,34 @@
+/* 공통 파츠 설정 */
+
+.rig-part {
+    display: block;
+    object-fit: fill;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  
+  /* 눈 깜빡임 */
+  
+  .rig-part-eyes {
+    animation: rig-blink 3.8s infinite;
+  }
+  
+  /* 눈 깜빡임 애니메이션 */
+  
+  @keyframes rig-blink {
+    0%, 89%, 96%, 100% {
+      transform: scaleY(1);
+    }
+  
+    92%, 93% {
+      transform: scaleY(0.08);
+    }
+  }
+  
+  /* 움직임 최소화 설정 */
+  
+  @media (prefers-reduced-motion: reduce) {
+    .rig-part-eyes {
+      animation: none;
+    }
+  }

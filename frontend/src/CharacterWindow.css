@@ -29,8 +29,9 @@ body:has(.desktop-character-window) #root {
 ======================================== */
 
 .desktop-character-window {
-    -webkit-app-region: drag;
-    app-region: drag;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+    touch-action: none;
     cursor: grab;
     user-select: none;
   }

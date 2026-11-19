@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import type { PointerEvent } from 'react';
 
 import Character from './components/Character/Character';
 import PomeranianCharacter from './components/Character/PomeranianCharacter';
@@ -21,16 +22,13 @@ const defaultReaction: CharacterReaction = {
 };
 
 export default function CharacterWindow() {
+
   // ========================================
-  // 1. 캐릭터 선택 상태
+  // 1. 캐릭터 및 감정 상태
   // ========================================
 
   const [characterType, setCharacterType] =
     useState<CharacterType>('pomeranian');
-
-  // ========================================
-  // 2. AI 감정 및 애니메이션 상태
-  // ========================================
 
   const [reaction, setReaction] =
     useState<CharacterReaction>(defaultReaction);
@@ -38,6 +36,19 @@ export default function CharacterWindow() {
   const [isThinking, setIsThinking] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [reactionId, setReactionId] = useState(0);
+
+  // ========================================
+  // 2. 드래그 상태
+  // ========================================
+
+  const dragRef = useRef({
+    isDown: false,
+    hasMoved: false,
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+  });
 
   // ========================================
   // 3. 캐릭터 선택 동기화
@@ -90,11 +101,82 @@ export default function CharacterWindow() {
   }, []);
 
   // ========================================
-  // 5. 캐릭터 렌더링
+  // 5. 클릭 및 드래그 처리
+  // ========================================
+
+  const handlePointerDown = (
+    e: PointerEvent<HTMLDivElement>
+  ) => {
+    if (e.button !== 0 || !e.isPrimary) return;
+
+    dragRef.current = {
+      isDown: true,
+      hasMoved: false,
+      startX: e.screenX,
+      startY: e.screenY,
+      lastX: e.screenX,
+      lastY: e.screenY,
+    };
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (
+    e: PointerEvent<HTMLDivElement>
+  ) => {
+    const drag = dragRef.current;
+
+    if (!drag.isDown || !e.isPrimary) return;
+
+    const distance = Math.hypot(
+      e.screenX - drag.startX,
+      e.screenY - drag.startY
+    );
+
+    if (!drag.hasMoved && distance < 5) return;
+
+    drag.hasMoved = true;
+
+    const dx = e.screenX - drag.lastX;
+    const dy = e.screenY - drag.lastY;
+
+    window.step1?.moveCharacter({ dx, dy });
+
+    drag.lastX = e.screenX;
+    drag.lastY = e.screenY;
+  };
+
+  const handlePointerUp = (
+    e: PointerEvent<HTMLDivElement>
+  ) => {
+    const drag = dragRef.current;
+
+    if (!drag.isDown || !e.isPrimary) return;
+
+    drag.isDown = false;
+
+    if (!drag.hasMoved) {
+      window.step1?.toggleChat();
+    }
+  };
+
+  const handlePointerCancel = () => {
+    dragRef.current.isDown = false;
+  };
+
+  // ========================================
+  // 6. 캐릭터 렌더링
   // ========================================
 
   return (
-    <div className="desktop-character-window">
+    <div
+      className="desktop-character-window"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onLostPointerCapture={handlePointerCancel}
+    >
       {characterType === 'pomeranian' ? (
         <PomeranianCharacter
           emotion={reaction.emotion}

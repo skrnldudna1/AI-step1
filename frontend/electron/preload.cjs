@@ -1,6 +1,23 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('step1', {
+
+  // ========================================
+  // 채팅창 제어
+  // ========================================
+
+  toggleChat: () => {
+    ipcRenderer.send('chat:toggle');
+  },
+
+  // ========================================
+  // 캐릭터 위치 이동
+  // ========================================
+
+  moveCharacter: (position) => {
+    ipcRenderer.send('character:move', position);
+  },
+
   // ========================================
   // 캐릭터 선택 동기화
   // ========================================

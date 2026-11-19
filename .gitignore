@@ -21,3 +21,9 @@ build/
 # IDE
 .vscode/
 .idea/
+
+# Automatically generated character assets
+backend/generated/
+
+# Local character test images
+frontend/public/character/custom/
