@@ -37,6 +37,12 @@ export interface CharacterRig {
     width: number;
     height: number;
   };
+  
+  mouthVariants?: {
+    closed: string;
+    half: string;
+    open: string;
+  } | null;
 
   parts: RigPart[];
 

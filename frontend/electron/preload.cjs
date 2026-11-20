@@ -18,6 +18,31 @@ contextBridge.exposeInMainWorld('step1', {
     ipcRenderer.send('character:move', position);
   },
 
+  // 캐릭터의 투명 영역은 클릭 통과
+  setCharacterMouseIgnored: (ignore) => {
+    ipcRenderer.send('character:mouse-ignore', ignore);
+  },
+  onCharacterCursor: (callback) => {
+    const listener = (_event, point) => callback(point);
+    ipcRenderer.on('character:cursor', listener);
+    return () => ipcRenderer.removeListener('character:cursor', listener);
+  },
+
+  // 캐릭터 크기 동기화
+  setCharacterSize: (size) => {
+    ipcRenderer.send('character:size-set', size);
+  },
+  getCharacterSize: () => {
+    return ipcRenderer.invoke('character:size-get');
+  },
+  onCharacterSizeChanged: (callback) => {
+    const listener = (_event, size) => callback(size);
+    ipcRenderer.on('character:size-changed', listener);
+    return () => {
+      ipcRenderer.removeListener('character:size-changed', listener);
+    };
+  },
+
   // ========================================
   // 캐릭터 선택 동기화
   // ========================================

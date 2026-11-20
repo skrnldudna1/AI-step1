@@ -23,6 +23,18 @@ interface Step1API {
     dy: number;
   }) => void;
 
+  setCharacterMouseIgnored: (ignore: boolean) => void;
+  onCharacterCursor: (
+    callback: (point: { x: number; y: number } | null) => void
+  ) => () => void;
+
+  // 캐릭터 크기 동기화 (50~200%; 기존 설정이 없으면 null)
+  setCharacterSize: (size: number) => void;
+  getCharacterSize: () => Promise<number | null>;
+  onCharacterSizeChanged: (
+    callback: (size: number) => void
+  ) => () => void;
+
   // 캐릭터 선택 동기화
   selectCharacter: (characterType: CharacterType) => void;
 

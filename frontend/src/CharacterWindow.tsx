@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import type { PointerEvent } from 'react';
 
 import Character from './components/Character/Character';
@@ -13,6 +13,7 @@ import type {
 } from './types/character';
 
 import './CharacterWindow.css';
+import { isCharacterPixel, prepareCharacterImage } from './characterHitTest';
 
 // ========================================
 // 기본 감정 상태
@@ -42,6 +43,31 @@ export default function CharacterWindow() {
   const [isThinking, setIsThinking] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [reactionId, setReactionId] = useState(0);
+  const [characterSize, setCharacterSize] = useState(100);
+
+  useEffect(() => {
+    const api = window.step1;
+    if (!api) return;
+    let active = true;
+    let receivedChange = false;
+    const unsubscribe = api.onCharacterSizeChanged((size) => {
+      receivedChange = true;
+      setCharacterSize(size);
+    });
+
+    api.getCharacterSize()
+      .then((size) => {
+        if (active && !receivedChange && size !== null) {
+          setCharacterSize(size);
+        }
+      })
+      .catch(console.error);
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
   // ========================================
   // 2. 드래그 상태
@@ -55,6 +81,37 @@ export default function CharacterWindow() {
     lastX: 0,
     lastY: 0,
   });
+  const windowRef = useRef<HTMLDivElement>(null);
+  const ignoredRef = useRef(true);
+
+  const updateMouseInteraction = useCallback((point: { x: number; y: number } | null) => {
+    const root = windowRef.current;
+    // Pointer capture must not be interrupted when dragging across clear pixels.
+    const ignore = !dragRef.current.isDown &&
+      (!root || !point || !isCharacterPixel(root, point));
+    if (ignoredRef.current !== ignore) {
+      ignoredRef.current = ignore;
+      window.step1?.setCharacterMouseIgnored?.(ignore);
+    }
+    if (root) root.dataset.characterHit = String(!ignore);
+  }, []);
+
+  useEffect(() => {
+    const api = window.step1;
+    if (!api?.onCharacterCursor) return;
+    const unsubscribe = api.onCharacterCursor(updateMouseInteraction);
+    const cancelOnBlur = () => {
+      dragRef.current.isDown = false;
+      updateMouseInteraction(null);
+    };
+    window.addEventListener('blur', cancelOnBlur);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('blur', cancelOnBlur);
+      ignoredRef.current = true;
+      api.setCharacterMouseIgnored(true);
+    };
+  }, [updateMouseInteraction]);
 
   // ========================================
   // 3. 캐릭터 선택 동기화
@@ -143,6 +200,10 @@ useEffect(() => {
     e: PointerEvent<HTMLDivElement>
   ) => {
     if (e.button !== 0 || !e.isPrimary) return;
+    if (!isCharacterPixel(e.currentTarget, { x: e.clientX, y: e.clientY })) {
+      updateMouseInteraction({ x: e.clientX, y: e.clientY });
+      return;
+    }
 
     dragRef.current = {
       isDown: true,
@@ -154,6 +215,7 @@ useEffect(() => {
     };
 
     e.currentTarget.setPointerCapture(e.pointerId);
+    updateMouseInteraction({ x: e.clientX, y: e.clientY });
   };
 
   const handlePointerMove = (
@@ -193,10 +255,13 @@ useEffect(() => {
     if (!drag.hasMoved) {
       window.step1?.toggleChat();
     }
+    updateMouseInteraction({ x: e.clientX, y: e.clientY });
   };
 
   const handlePointerCancel = () => {
+    if (!dragRef.current.isDown) return;
     dragRef.current.isDown = false;
+    updateMouseInteraction(null);
   };
 
   // ========================================
@@ -206,33 +271,50 @@ useEffect(() => {
   return (
     <div
       className="desktop-character-window"
+      ref={windowRef}
+      onLoadCapture={(e) => {
+        if (e.target instanceof HTMLImageElement) prepareCharacterImage(e.target);
+      }}
+      onMouseMove={(e) => updateMouseInteraction({ x: e.clientX, y: e.clientY })}
+      onMouseLeave={() => updateMouseInteraction(null)}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       onLostPointerCapture={handlePointerCancel}
     >
-      {characterType === 'custom' && customRig ? (
-  <RiggedCharacter
-    rig={customRig}
-    reaction={reaction}
-  />
-  ) : characterType === 'pomeranian' ? (
-    <PomeranianCharacter
-      emotion={reaction.emotion}
-      isTalking={isTalking}
-    />
-  ) : (
-    <Character
-      characterType={
-        characterType === 'custom' ? 'basic' : characterType
-      }
-      reaction={reaction}
-      isThinking={isThinking}
-      isTalking={isTalking}
-      reactionId={reactionId}
-    />
-)}
+      <div
+        className="character-size-stage"
+        style={{ zoom: characterSize / 100 }}
+      >
+        {characterType === 'custom' && customRig ? (
+          <div style={{
+            width: Math.min(250, 330 * customRig.canvas.width / customRig.canvas.height),
+          }}>
+            <RiggedCharacter
+              rig={customRig}
+              reaction={reaction}
+              isTalking={isTalking}
+              isThinking={isThinking}
+            />
+          </div>
+        ) : characterType === 'pomeranian' ? (
+          <PomeranianCharacter
+            emotion={reaction.emotion}
+            isTalking={isTalking}
+          />
+        ) : (
+          <Character
+            characterType={
+              characterType === 'custom' ? 'basic' : characterType
+            }
+            reaction={reaction}
+            isThinking={isThinking}
+            isTalking={isTalking}
+            reactionId={reactionId}
+          />
+        )}
+      </div>
     </div>
   );
 }

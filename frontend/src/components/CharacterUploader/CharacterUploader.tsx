@@ -1,7 +1,6 @@
+
 import { useEffect, useState } from 'react';
 import type { ChangeEvent } from 'react';
-
-import RiggedCharacter from '../Character/RiggedCharacter';
 
 import type {
   CharacterRig,
@@ -63,7 +62,6 @@ interface CharacterUploaderProps {
 export default function CharacterUploader({
   onCharacterGenerated,
 }: CharacterUploaderProps) {
-
   const [selectedFile, setSelectedFile] =
     useState<File | null>(null);
 
@@ -84,19 +82,15 @@ export default function CharacterUploader({
   const [showOverlay, setShowOverlay] =
     useState(true);
 
-  const [generatedRig, setGeneratedRig] =
-    useState<CharacterRig | null>(null);
-
   const isBusy = isAnalyzing || isGenerating;
 
   // ========================================
-  // 이미지 선택
+  // 1. 이미지 선택
   // ========================================
 
   const handleFileChange = (
     event: ChangeEvent<HTMLInputElement>
   ) => {
-
     const file = event.target.files?.[0];
 
     event.target.value = '';
@@ -125,17 +119,15 @@ export default function CharacterUploader({
 
     setError('');
     setAnalysis(null);
-    setGeneratedRig(null);
     setShowOverlay(true);
     setSelectedFile(file);
   };
 
   // ========================================
-  // 이미지 미리보기
+  // 2. 이미지 미리보기
   // ========================================
 
   useEffect(() => {
-
     if (!selectedFile) {
       setPreview(null);
       return;
@@ -149,24 +141,20 @@ export default function CharacterUploader({
     return () => {
       URL.revokeObjectURL(imageUrl);
     };
-
   }, [selectedFile]);
 
   // ========================================
-  // 이미지 분석
+  // 3. 이미지 분석
   // ========================================
 
   const handleAnalyze = async () => {
-
     if (!selectedFile || isBusy) return;
 
     setIsAnalyzing(true);
     setError('');
     setAnalysis(null);
-    setGeneratedRig(null);
 
     try {
-
       const formData = new FormData();
 
       formData.append('file', selectedFile);
@@ -180,7 +168,6 @@ export default function CharacterUploader({
       );
 
       if (!response.ok) {
-
         const data = await response.json()
           .catch(() => null);
 
@@ -198,7 +185,6 @@ export default function CharacterUploader({
       setShowOverlay(true);
 
     } catch (error) {
-
       setError(
         error instanceof Error
           ? error.message
@@ -206,25 +192,21 @@ export default function CharacterUploader({
       );
 
     } finally {
-
       setIsAnalyzing(false);
     }
   };
 
   // ========================================
-  // 캐릭터 자동 리깅 생성
+  // 4. 캐릭터 자동 리깅 생성
   // ========================================
 
   const handleGenerate = async () => {
-
     if (!selectedFile || isBusy) return;
 
     setIsGenerating(true);
     setError('');
-    setGeneratedRig(null);
 
     try {
-
       const formData = new FormData();
 
       formData.append('file', selectedFile);
@@ -238,7 +220,6 @@ export default function CharacterUploader({
       );
 
       if (!response.ok) {
-
         const data = await response.json()
           .catch(() => null);
 
@@ -252,7 +233,7 @@ export default function CharacterUploader({
       const data: RigGenerateResponse =
         await response.json();
 
-      // 이미지 파일명을 실제 서버 주소로 변환
+      // 이미지 주소를 절대 URL로 변환
       const baseUrl = new URL(
         data.base_url,
         API_URL
@@ -263,19 +244,39 @@ export default function CharacterUploader({
 
         parts: data.rig.parts.map((part) => ({
           ...part,
-
-          src: new URL(
-            part.src,
-            baseUrl
-          ).href,
+          src: new URL(part.src, baseUrl).href,
         })),
+
+        mouthVariants: data.rig.mouthVariants
+          ? {
+              closed: new URL(
+                data.rig.mouthVariants.closed,
+                baseUrl
+              ).href,
+
+              half: new URL(
+                data.rig.mouthVariants.half,
+                baseUrl
+              ).href,
+
+              open: new URL(
+                data.rig.mouthVariants.open,
+                baseUrl
+              ).href,
+            }
+          : null,
       };
 
-      setGeneratedRig(rig);
+      // 생성한 캐릭터를 App.tsx에 전달
       onCharacterGenerated?.(rig);
 
-    } catch (error) {
+      // 생성 성공 후 업로더 초기화
+      setSelectedFile(null);
+      setAnalysis(null);
+      setShowOverlay(true);
+      setError('');
 
+    } catch (error) {
       setError(
         error instanceof Error
           ? error.message
@@ -283,26 +284,26 @@ export default function CharacterUploader({
       );
 
     } finally {
-
       setIsGenerating(false);
     }
   };
 
   // ========================================
-  // 초기화
+  // 5. 업로더 초기화
   // ========================================
 
   const handleReset = () => {
-
     setSelectedFile(null);
     setAnalysis(null);
-    setGeneratedRig(null);
     setError('');
     setShowOverlay(true);
   };
 
-  return (
+  // ========================================
+  // 6. UI
+  // ========================================
 
+  return (
     <section className="character-uploader">
 
       <h2>나만의 캐릭터 만들기</h2>
@@ -312,23 +313,18 @@ export default function CharacterUploader({
       </p>
 
       <label className="upload-area">
-
         {preview ? (
-
           <img
             src={preview}
             className="upload-preview"
             alt="캐릭터 미리보기"
           />
-
         ) : (
-
           <div className="upload-placeholder">
             <span>＋</span>
             <p>캐릭터 이미지 선택</p>
             <small>PNG, JPG, WEBP</small>
           </div>
-
         )}
 
         <input
@@ -337,7 +333,6 @@ export default function CharacterUploader({
           onChange={handleFileChange}
           disabled={isBusy}
         />
-
       </label>
 
       {selectedFile && (
@@ -353,7 +348,6 @@ export default function CharacterUploader({
       )}
 
       {selectedFile && (
-
         <div className="upload-actions">
 
           <button
@@ -377,24 +371,20 @@ export default function CharacterUploader({
           </button>
 
         </div>
-
       )}
 
       {/* 이미지 분석 결과 */}
 
       {analysis && preview && (
-
         <div className="analysis-result">
 
           <h3>이미지 분석 완료!</h3>
 
           <div className="analysis-visual">
-
             <svg
               viewBox={`0 0 ${analysis.width} ${analysis.height}`}
               className="analysis-svg"
             >
-
               <image
                 href={preview}
                 x={0}
@@ -404,9 +394,7 @@ export default function CharacterUploader({
               />
 
               {showOverlay && (
-
                 <g>
-
                   <rect
                     {...analysis.geometry.bounds}
                     fill="none"
@@ -424,9 +412,7 @@ export default function CharacterUploader({
 
                   {analysis.geometry.features.map(
                     (feature, index) => (
-
                       <g key={feature.id}>
-
                         <rect
                           {...feature.bounds}
                           fill="none"
@@ -447,21 +433,15 @@ export default function CharacterUploader({
                         >
                           {index + 1}
                         </text>
-
                       </g>
                     )
                   )}
-
                 </g>
-
               )}
-
             </svg>
-
           </div>
 
           <label className="overlay-toggle">
-
             <input
               type="checkbox"
               checked={showOverlay}
@@ -469,13 +449,10 @@ export default function CharacterUploader({
                 setShowOverlay(event.target.checked)
               }
             />
-
             분석 영역 표시
-
           </label>
 
           <div className="analysis-legend">
-
             <span className="legend-bounds">
               전체 영역
             </span>
@@ -487,7 +464,6 @@ export default function CharacterUploader({
             <span className="legend-center">
               중심점
             </span>
-
           </div>
 
           <p>파일: {analysis.filename}</p>
@@ -527,51 +503,8 @@ export default function CharacterUploader({
           </button>
 
         </div>
-
-      )}
-
-      {/* 자동 조립된 캐릭터 */}
-
-      {generatedRig && (
-
-        <div className="rig-preview">
-
-          <h3>캐릭터 생성 완료!</h3>
-
-          <div className="rig-preview-stage">
-
-            <RiggedCharacter
-              rig={generatedRig}
-              reaction={{
-                emotion: 'neutral',
-                action: 'idle',
-                intensity: 0,
-              }}
-            />
-
-          </div>
-
-          <p>
-            전체 레이어: {generatedRig.parts.length}개
-          </p>
-
-          <p>
-            얼굴 파츠: {
-              generatedRig.parts.filter(
-                (part) => part.id !== 'base'
-              ).length
-            }개
-          </p>
-
-          <p className="rig-success-message">
-            캐릭터 자동 조립에 성공했습니다.
-          </p>
-
-        </div>
-
       )}
 
     </section>
-
   );
 }

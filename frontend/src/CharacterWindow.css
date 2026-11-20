@@ -5,6 +5,8 @@ body:has(.desktop-character-window) #root {
   padding: 0;
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   background: transparent !important;
   overflow: hidden;
 }
@@ -18,11 +20,41 @@ body:has(.desktop-character-window) #root {
   justify-content: center;
 
   background: transparent;
+  overflow: hidden;
 }
 
-.desktop-character-window .pomeranian-container {
+.character-size-stage {
+  width: 360px;
+  height: 400px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.character-size-stage .pomeranian-container,
+.character-size-stage .image-character-container {
   min-height: 0;
 }
+
+.character-size-stage .character-container {
+  margin-top: 0;
+}
+
+/* 각 캐릭터의 고정 원본 크기를 250px 기준으로 맞춘다.
+   바깥 stage의 zoom이 50~200% 설정을 모든 파츠에 적용한다. */
+.character-size-stage .character-face {
+  zoom: 1.25;
+}
+
+.character-size-stage .image-character {
+  zoom: 0.8928571429;
+}
+
+.character-size-stage .pomeranian-character {
+  zoom: 0.78125;
+}
+
 
 /* ========================================
    🐶 데스크톱 캐릭터 드래그
@@ -32,11 +64,15 @@ body:has(.desktop-character-window) #root {
     -webkit-app-region: no-drag;
     app-region: no-drag;
     touch-action: none;
-    cursor: grab;
+    cursor: default;
     user-select: none;
   }
   
-  .desktop-character-window:active {
+  .desktop-character-window[data-character-hit="true"] {
+    cursor: grab;
+  }
+
+  .desktop-character-window[data-character-hit="true"]:active {
     cursor: grabbing;
   }
   

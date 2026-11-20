@@ -7,7 +7,7 @@ import './PomeranianCharacter.css';
 const BASE = '/character/pomeranian/';
 
 interface PomeranianCharacterProps {
-    emotion?: Emotion;
+    emotion?: Emotion | 'excited';
     isTalking?: boolean;
   }
 

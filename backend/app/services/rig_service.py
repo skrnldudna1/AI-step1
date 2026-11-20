@@ -24,6 +24,79 @@ class RigService:
             exist_ok=True
         )
 
+    def create_mouth_variants(
+        self,
+        mouth_image: np.ndarray,
+        save_dir: Path
+    ) -> None:
+        """
+        원본 입 이미지에서 닫힌 입, 반쯤 열린 입,
+        크게 열린 입 이미지를 생성한다.
+        """
+
+        image = Image.fromarray(mouth_image)
+        image.save(save_dir / "mouth_closed.png")
+
+        height, width = mouth_image.shape[:2]
+
+        # 입 모양을 그릴 공간이 너무 작으면
+        # 기존 입 이미지를 유지한다.
+        if width < 4 or height < 4:
+            image.save(save_dir / "mouth_half.png")
+            image.save(save_dir / "mouth_open.png")
+            return
+
+        from PIL import ImageDraw
+
+        for variant, openness in [
+            ("half", 0.35),
+            ("open", 0.7),
+        ]:
+            canvas = Image.new(
+                "RGBA",
+                (width, height),
+                (0, 0, 0, 0)
+            )
+
+            draw = ImageDraw.Draw(canvas)
+
+            center_x = width / 2
+            center_y = height / 2
+
+            mouth_width = width * 0.65
+            mouth_height = max(
+                2,
+                height * openness
+            )
+
+            x1 = center_x - mouth_width / 2
+            x2 = center_x + mouth_width / 2
+            y1 = center_y - mouth_height / 2
+            y2 = center_y + mouth_height / 2
+
+            # 입 안쪽
+            draw.ellipse(
+                (x1, y1, x2, y2),
+                fill=(65, 35, 45, 255)
+            )
+
+            # 크게 열린 입에는 혀 추가
+            if variant == "open":
+                draw.ellipse(
+                    (
+                        center_x - mouth_width * 0.22,
+                        center_y + mouth_height * 0.12,
+                        center_x + mouth_width * 0.22,
+                        center_y + mouth_height * 0.38,
+                    ),
+                    fill=(225, 125, 145, 255)
+                )
+
+            canvas.save(
+                save_dir / f"mouth_{variant}.png"
+            )
+
+
     def generate(self, contents: bytes) -> dict:
 
         # 캐릭터 이미지 분석
@@ -131,6 +204,13 @@ class RigService:
                 save_dir / filename
             )
 
+            # 입 파츠라면 말하기용 이미지 생성
+            if part_type == "mouth":
+                self.create_mouth_variants(
+                crop,
+                save_dir
+            )
+
             # 원본에서 제거할 영역 등록
             kernel = np.ones(
                 (3, 3),
@@ -217,7 +297,16 @@ class RigService:
                 "height": height
             },
             "parts": parts,
-            "expressions": {}
+            "expressions": {},
+            "mouthVariants": (
+                {
+                    "closed": "mouth_closed.png",
+                    "half": "mouth_half.png",
+                    "open": "mouth_open.png"
+                }
+                if any(part["id"] == "mouth" for part in parts)
+                else None
+            )
         }
 
         # JSON 파일 저장
