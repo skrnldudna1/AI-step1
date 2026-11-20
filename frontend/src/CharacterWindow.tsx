@@ -4,6 +4,9 @@ import type { PointerEvent } from 'react';
 import Character from './components/Character/Character';
 import PomeranianCharacter from './components/Character/PomeranianCharacter';
 
+import RiggedCharacter from './components/Character/RiggedCharacter';
+import type { CharacterRig } from './types/rig';
+
 import type {
   CharacterType,
   CharacterReaction,
@@ -29,6 +32,9 @@ export default function CharacterWindow() {
 
   const [characterType, setCharacterType] =
     useState<CharacterType>('pomeranian');
+
+    const [customRig, setCustomRig] =
+  useState<CharacterRig | null>(null);
 
   const [reaction, setReaction] =
     useState<CharacterReaction>(defaultReaction);
@@ -78,6 +84,35 @@ export default function CharacterWindow() {
       unsubscribe();
     };
   }, []);
+
+  // ========================================
+// 커스텀 캐릭터 리깅 동기화
+// ========================================
+
+useEffect(() => {
+  const api = window.step1;
+
+  if (!api) return;
+
+  let active = true;
+
+  const unsubscribe = api.onCustomRigChanged((rig) => {
+    setCustomRig(rig);
+  });
+
+  api.getCustomRig()
+    .then((rig) => {
+      if (active) {
+        setCustomRig(rig);
+      }
+    })
+    .catch(console.error);
+
+  return () => {
+    active = false;
+    unsubscribe();
+  };
+}, []);
 
   // ========================================
   // 4. AI 감정 동기화
@@ -177,20 +212,27 @@ export default function CharacterWindow() {
       onPointerCancel={handlePointerCancel}
       onLostPointerCapture={handlePointerCancel}
     >
-      {characterType === 'pomeranian' ? (
-        <PomeranianCharacter
-          emotion={reaction.emotion}
-          isTalking={isTalking}
-        />
-      ) : (
-        <Character
-          characterType={characterType}
-          reaction={reaction}
-          isThinking={isThinking}
-          isTalking={isTalking}
-          reactionId={reactionId}
-        />
-      )}
+      {characterType === 'custom' && customRig ? (
+  <RiggedCharacter
+    rig={customRig}
+    reaction={reaction}
+  />
+  ) : characterType === 'pomeranian' ? (
+    <PomeranianCharacter
+      emotion={reaction.emotion}
+      isTalking={isTalking}
+    />
+  ) : (
+    <Character
+      characterType={
+        characterType === 'custom' ? 'basic' : characterType
+      }
+      reaction={reaction}
+      isThinking={isThinking}
+      isTalking={isTalking}
+      reactionId={reactionId}
+    />
+)}
     </div>
   );
 }

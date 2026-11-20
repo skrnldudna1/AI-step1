@@ -1,4 +1,10 @@
-import type { CharacterType, CharacterReaction } from './character';
+
+import type {
+  CharacterType,
+  CharacterReaction,
+} from './character';
+
+import type { CharacterRig } from './rig';
 
 interface ReactionState {
   reaction: CharacterReaction;
@@ -8,13 +14,16 @@ interface ReactionState {
 }
 
 interface Step1API {
-    toggleChat: () => void;
+  // 채팅창 열기 및 숨기기
+  toggleChat: () => void;
 
-    moveCharacter: (position: {
-        dx: number;
-        dy: number;
-      }) => void;
+  // 데스크톱 캐릭터 이동
+  moveCharacter: (position: {
+    dx: number;
+    dy: number;
+  }) => void;
 
+  // 캐릭터 선택 동기화
   selectCharacter: (characterType: CharacterType) => void;
 
   getCharacter: () => Promise<CharacterType>;
@@ -23,10 +32,20 @@ interface Step1API {
     callback: (characterType: CharacterType) => void
   ) => () => void;
 
+  // AI 감정 및 애니메이션 동기화
   sendReaction: (state: ReactionState) => void;
 
   onReactionChanged: (
     callback: (state: ReactionState) => void
+  ) => () => void;
+
+  // 커스텀 캐릭터 리깅 동기화
+  sendCustomRig: (rig: CharacterRig) => void;
+
+  getCustomRig: () => Promise<CharacterRig | null>;
+
+  onCustomRigChanged: (
+    callback: (rig: CharacterRig) => void
   ) => () => void;
 }
 

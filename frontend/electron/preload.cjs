@@ -30,6 +30,32 @@ contextBridge.exposeInMainWorld('step1', {
     return ipcRenderer.invoke('character:get');
   },
 
+    // 커스텀 캐릭터 리깅 데이터 전송
+  sendCustomRig: (rig) => {
+    ipcRenderer.send('character:custom-rig', rig);
+  },
+
+  // 저장된 커스텀 리깅 데이터 요청
+  getCustomRig: () => {
+    return ipcRenderer.invoke('character:custom-rig-get');
+  },
+
+  // 커스텀 리깅 데이터 변경 감지
+  onCustomRigChanged: (callback) => {
+    const listener = (_event, rig) => {
+      callback(rig);
+    };
+
+    ipcRenderer.on('character:custom-rig-changed', listener);
+
+    return () => {
+      ipcRenderer.removeListener(
+        'character:custom-rig-changed',
+        listener
+      );
+    };
+  },
+
   onCharacterChanged: (callback) => {
     const listener = (_event, characterType) => {
       callback(characterType);

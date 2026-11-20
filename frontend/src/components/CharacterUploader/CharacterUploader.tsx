@@ -56,7 +56,13 @@ interface AnalysisResult {
   message: string;
 }
 
-export default function CharacterUploader() {
+interface CharacterUploaderProps {
+  onCharacterGenerated?: (rig: CharacterRig) => void;
+}
+
+export default function CharacterUploader({
+  onCharacterGenerated,
+}: CharacterUploaderProps) {
 
   const [selectedFile, setSelectedFile] =
     useState<File | null>(null);
@@ -266,6 +272,7 @@ export default function CharacterUploader() {
       };
 
       setGeneratedRig(rig);
+      onCharacterGenerated?.(rig);
 
     } catch (error) {
 

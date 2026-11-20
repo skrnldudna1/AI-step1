@@ -1,9 +1,11 @@
+
 import { useEffect, useRef, useState } from 'react';
 
 import CharacterUploader from './components/CharacterUploader/CharacterUploader';
 
 import Character from './components/Character/Character';
 import PomeranianCharacter from './components/Character/PomeranianCharacter';
+import RiggedCharacter from './components/Character/RiggedCharacter';
 import ReactionControls from './components/ReactionControls/ReactionControls';
 import Chat from './components/Chat/Chat';
 
@@ -13,8 +15,36 @@ import type {
   CharacterReaction,
   CharacterType,
 } from './types/character';
+import type { CharacterRig } from './types/rig';
 
 import './App.css';
+
+const CHARACTER_STORAGE_KEY = 'gpt-companion-character';
+const CUSTOM_RIG_STORAGE_KEY = 'gpt-companion-custom-rig';
+
+function loadCustomRig(): CharacterRig | null {
+  try {
+    const saved = localStorage.getItem(CUSTOM_RIG_STORAGE_KEY);
+
+    if (!saved) return null;
+
+    const parsed: unknown = JSON.parse(saved);
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('canvas' in parsed) ||
+      !('parts' in parsed) ||
+      !Array.isArray(parsed.parts)
+    ) {
+      return null;
+    }
+
+    return parsed as CharacterRig;
+  } catch {
+    return null;
+  }
+}
 
 function App() {
   // ========================================
@@ -25,33 +55,30 @@ function App() {
   const [action, setAction] = useState<Action>('idle');
   const [intensity, setIntensity] = useState<number>(0.5);
 
-  // 같은 애니메이션을 다시 실행하기 위한 ID
   const [reactionId, setReactionId] = useState(0);
 
-  // AI가 생각하는 중인지
   const [isThinking, setIsThinking] = useState(false);
-
-  // AI가 말하는 중인지
   const [isTalking, setIsTalking] = useState(false);
 
-  // 말하기 종료 타이머
   const talkingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
 
-  // 백엔드 서버 연결 상태
   const [serverStatus, setServerStatus] = useState(
     '서버 연결 확인 중...'
   );
 
-    // ========================================
-  // 2. 캐릭터 선택 상태 관리
+  // ========================================
+  // 2. 커스텀 캐릭터 상태 관리
   // ========================================
 
-  // 마지막으로 선택한 캐릭터 불러오기
+  const [customRig, setCustomRig] = useState<CharacterRig | null>(
+    loadCustomRig
+  );
+
   const [characterType, setCharacterType] = useState<CharacterType>(() => {
     try {
-      const saved = localStorage.getItem('gpt-companion-character');
+      const saved = localStorage.getItem(CHARACTER_STORAGE_KEY);
 
       if (
         saved === 'basic' ||
@@ -61,29 +88,59 @@ function App() {
         return saved;
       }
 
+      if (saved === 'custom' && loadCustomRig()) {
+        return 'custom';
+      }
+
       return 'basic';
     } catch {
       return 'basic';
     }
   });
 
-  // Electron 데스크톱 캐릭터 창에 선택 정보 전달
-  useEffect(() => {
-    window.step1?.selectCharacter(characterType);
-  }, [characterType]);
+    // Electron 데스크톱 캐릭터 창에 캐릭터 정보 전달
+    useEffect(() => {
+      const api = window.step1;
 
-  // 캐릭터 변경 및 선택값 저장
+      if (!api) return;
+
+      // 커스텀 캐릭터는 리깅 데이터를 먼저 전달
+      if (characterType === 'custom') {
+        if (!customRig) return;
+
+        api.sendCustomRig(customRig);
+      }
+
+      api.selectCharacter(characterType);
+    }, [characterType, customRig]);
+
   const handleCharacterChange = (type: CharacterType) => {
+    if (type === 'custom' && !customRig) return;
+
     setCharacterType(type);
 
     try {
-      localStorage.setItem('gpt-companion-character', type);
+      localStorage.setItem(CHARACTER_STORAGE_KEY, type);
     } catch {
-      // 저장이 불가능해도 캐릭터 전환은 정상 작동
+      // 저장할 수 없어도 캐릭터 전환은 유지
     }
   };
 
-  // 캐릭터에게 전달할 감정 데이터
+  const handleCustomCharacterGenerated = (rig: CharacterRig) => {
+    setCustomRig(rig);
+    setCharacterType('custom');
+
+    try {
+      localStorage.setItem(
+        CUSTOM_RIG_STORAGE_KEY,
+        JSON.stringify(rig)
+      );
+      localStorage.setItem(CHARACTER_STORAGE_KEY, 'custom');
+    } catch (error) {
+      console.warn('커스텀 캐릭터 저장 실패:', error);
+    }
+  };
+
   const reaction: CharacterReaction = {
     emotion,
     intensity,
@@ -91,64 +148,57 @@ function App() {
   };
 
   // ========================================
-// Electron 데스크톱 캐릭터 감정 동기화
-// ========================================
+  // 3. Electron 감정 동기화
+  // ========================================
 
-useEffect(() => {
-  window.step1?.sendReaction({
-    reaction: {
-      emotion,
-      intensity,
-      action,
-    },
+  useEffect(() => {
+    window.step1?.sendReaction({
+      reaction: {
+        emotion,
+        intensity,
+        action,
+      },
+      isThinking,
+      isTalking,
+      reactionId,
+    });
+  }, [
+    emotion,
+    intensity,
+    action,
     isThinking,
     isTalking,
     reactionId,
-  });
-}, [
-  emotion,
-  intensity,
-  action,
-  isThinking,
-  isTalking,
-  reactionId,
-]);
+  ]);
 
   // ========================================
-  // 3. AI 응답에 따른 감정 변경
+  // 4. AI 응답에 따른 감정 변경
   // ========================================
 
   const handleAIReaction = (newReaction: CharacterReaction) => {
     setEmotion(newReaction.emotion);
     setAction(newReaction.action);
     setIntensity(newReaction.intensity);
-
-    // 동일한 행동도 다시 실행할 수 있도록 ID 증가
     setReactionId((prev) => prev + 1);
   };
 
   // ========================================
-  // 4. Talking Animation 관리
+  // 5. Talking Animation 관리
   // ========================================
 
   const handleTalkingStart = (text: string) => {
-    // 기존 말하기 종료 타이머 제거
     if (talkingTimerRef.current !== null) {
       clearTimeout(talkingTimerRef.current);
       talkingTimerRef.current = null;
     }
 
-    // 말하기 시작
     setIsTalking(true);
 
-    // 답변 길이에 따라 말하기 시간 계산
-    // 최소 1초, 최대 5초
     const duration = Math.min(
       5000,
       Math.max(1000, text.length * 80)
     );
 
-    // 시간이 지나면 말하기 종료
     talkingTimerRef.current = setTimeout(() => {
       setIsTalking(false);
       talkingTimerRef.current = null;
@@ -156,17 +206,15 @@ useEffect(() => {
   };
 
   // ========================================
-  // 5. Thinking Animation 관리
+  // 6. Thinking Animation 관리
   // ========================================
 
   const handleThinkingChange = (thinking: boolean) => {
     setIsThinking(thinking);
 
-    // 새로운 메시지를 보내면 기존 Talking 종료
     if (thinking) {
       setIsTalking(false);
 
-      // 이전 말하기 타이머 제거
       if (talkingTimerRef.current !== null) {
         clearTimeout(talkingTimerRef.current);
         talkingTimerRef.current = null;
@@ -175,13 +223,12 @@ useEffect(() => {
   };
 
   // ========================================
-  // 6. 캐릭터 행동 자동 초기화
+  // 7. 행동 자동 초기화
   // ========================================
 
   useEffect(() => {
     if (action === 'idle') return;
 
-    // 행동 애니메이션 실행 후 기본 상태로 복귀
     const timer = setTimeout(() => {
       setAction('idle');
     }, 1000);
@@ -190,7 +237,7 @@ useEffect(() => {
   }, [action]);
 
   // ========================================
-  // 7. FastAPI 서버 연결 확인
+  // 8. FastAPI 서버 연결 확인
   // ========================================
 
   useEffect(() => {
@@ -226,7 +273,7 @@ useEffect(() => {
   }, []);
 
   // ========================================
-  // 8. 컴포넌트 종료 시 타이머 정리
+  // 9. 컴포넌트 종료 시 타이머 정리
   // ========================================
 
   useEffect(() => {
@@ -238,13 +285,15 @@ useEffect(() => {
   }, []);
 
   // ========================================
-  // 9. 캐릭터 선택 버튼 스타일
+  // 10. 캐릭터 선택 버튼 스타일
   // ========================================
 
   const characterButtonStyle = (type: CharacterType) => ({
     padding: '10px 16px',
     borderRadius: '12px',
-    cursor: 'pointer',
+    cursor: type === 'custom' && !customRig
+      ? 'not-allowed'
+      : 'pointer',
     border:
       characterType === type
         ? '2px solid #8b9bb4'
@@ -254,10 +303,11 @@ useEffect(() => {
         ? '#e8edf5'
         : '#ffffff',
     color: '#333333',
+    opacity: type === 'custom' && !customRig ? 0.5 : 1,
   });
 
   // ========================================
-  // 10. 화면 렌더링
+  // 11. 화면 렌더링
   // ========================================
 
   return (
@@ -268,15 +318,11 @@ useEffect(() => {
         나만의 AI 캐릭터와 대화하는 공간
       </p>
 
-      {/* 백엔드 연결 상태 */}
       <p className="server-status">
         {serverStatus}
       </p>
 
-      {/* ========================================
-          캐릭터 선택 버튼
-      ======================================== */}
-
+      {/* 캐릭터 선택 버튼 */}
       <div
         className="character-selector"
         role="group"
@@ -289,7 +335,6 @@ useEffect(() => {
           flexWrap: 'wrap',
         }}
       >
-        {/* 기본 캐릭터 */}
         <button
           type="button"
           onClick={() => handleCharacterChange('basic')}
@@ -299,7 +344,6 @@ useEffect(() => {
           ⚪ 기본 캐릭터
         </button>
 
-        {/* 일러스트 캐릭터 */}
         <button
           type="button"
           onClick={() => handleCharacterChange('illustration')}
@@ -309,7 +353,6 @@ useEffect(() => {
           🎨 일러스트 캐릭터
         </button>
 
-        {/* 포메라니안 */}
         <button
           type="button"
           onClick={() => handleCharacterChange('pomeranian')}
@@ -318,22 +361,39 @@ useEffect(() => {
         >
           🐶 포메라니안
         </button>
+
+        <button
+          type="button"
+          onClick={() => handleCharacterChange('custom')}
+          aria-pressed={characterType === 'custom'}
+          disabled={!customRig}
+          style={characterButtonStyle('custom')}
+        >
+          ✨ 내 캐릭터
+        </button>
       </div>
-      
-      <CharacterUploader />
 
-      {/* ========================================
-          AI 캐릭터
-      ======================================== */}
+      {/* 이미지 업로드 및 자동 리깅 */}
+      <CharacterUploader
+        onCharacterGenerated={handleCustomCharacterGenerated}
+      />
 
-      {characterType === 'pomeranian' ? (
-            <PomeranianCharacter
-            emotion={emotion}
-            isTalking={isTalking}
-          />
-          ) : (
+      {/* AI 캐릭터 */}
+      {characterType === 'custom' && customRig ? (
+        <RiggedCharacter
+          rig={customRig}
+          reaction={reaction}
+        />
+      ) : characterType === 'pomeranian' ? (
+        <PomeranianCharacter
+          emotion={emotion}
+          isTalking={isTalking}
+        />
+      ) : (
         <Character
-          characterType={characterType}
+          characterType={
+            characterType === 'custom' ? 'basic' : characterType
+          }
           reaction={reaction}
           isThinking={isThinking}
           isTalking={isTalking}
@@ -341,10 +401,7 @@ useEffect(() => {
         />
       )}
 
-      {/* ========================================
-          감정 및 행동 테스트 버튼
-      ======================================== */}
-
+      {/* 감정 및 행동 테스트 버튼 */}
       <ReactionControls
         emotion={emotion}
         action={action}
@@ -354,10 +411,7 @@ useEffect(() => {
         onIntensityChange={setIntensity}
       />
 
-      {/* ========================================
-          AI 채팅
-      ======================================== */}
-
+      {/* AI 채팅 */}
       <Chat
         onReaction={handleAIReaction}
         onLoadingChange={handleThinkingChange}

@@ -13,11 +13,13 @@ app.on('before-quit', () => {
 });
 
 let selectedCharacter = 'pomeranian';
+let customRig = null;
 
 const validCharacters = [
   'basic',
   'illustration',
   'pomeranian',
+  'custom',
 ];
 
 // ========================================
@@ -37,6 +39,28 @@ ipcMain.on('character:select', (_event, characterType) => {
 
 ipcMain.handle('character:get', () => {
   return selectedCharacter;
+});
+
+// ========================================
+// 커스텀 캐릭터 리깅 데이터 동기화
+// ========================================
+
+ipcMain.on('character:custom-rig', (_event, rig) => {
+  if (!rig || typeof rig !== 'object') return;
+  if (!Array.isArray(rig.parts)) return;
+
+  customRig = rig;
+
+  if (characterWindow && !characterWindow.isDestroyed()) {
+    characterWindow.webContents.send(
+      'character:custom-rig-changed',
+      customRig
+    );
+  }
+});
+
+ipcMain.handle('character:custom-rig-get', () => {
+  return customRig;
 });
 
 // ========================================
