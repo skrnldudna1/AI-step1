@@ -1,10 +1,8 @@
-// 계증 구조 = 캐릭터>페이스>눈>눈2개 > / 입
-
 import type { CharacterReaction } from '../../types/character';
-import { useEffect, useRef } from 'react';
-import type { CSSProperties } from 'react';
+import { EMOTION_CONFIG } from '../../types/emotion';
+import { ExpressionEye, ExpressionMouth, ExpressionAccents } from './ExpressionFeatures';
+import { useExpressionMotion } from './useExpressionMotion';
 import './BasicCharacter.css';
-
 
 interface CharacterProps {
   reaction: CharacterReaction;
@@ -13,69 +11,21 @@ interface CharacterProps {
   reactionId: number;
 }
 
-function BasicCharacter({
-  reaction,
-  isThinking,
-  isTalking,
-  reactionId,
-}: CharacterProps) {
-
-  console.log("캐릭터 Thinking 상태:", isThinking);
-    
-  const faceRef = useRef<HTMLDivElement>(null);
-
-useEffect(() => {
-  const face = faceRef.current;
-
-  if (!face || reactionId === 0 || isThinking) return;
-
-  // 현재 애니메이션을 초기화
-  face.style.animation = 'none';
-
-  // 브라우저에 스타일 변경을 반영
-  void face.offsetWidth;
-
-  // CSS에 정의된 애니메이션 다시 실행
-  face.style.animation = '';
-}, [reactionId, isThinking]);
-  
-    const intensity = Math.min(1, Math.max(0, reaction.intensity));
-    // 감정 강도를 0~1 범위로 제한
-    const bounceHeight = 5 + intensity * 25;
-    // 감정 강도에 따른 이동 거리 계산
-
-    const characterStyle = {
-        '--bounce-height': `-${bounceHeight}px`,
-      } as CSSProperties;
-      // React에서 CSS 변수 전달
-
+export default function BasicCharacter({ reaction, isThinking, isTalking, reactionId }: CharacterProps) {
+  const motion = useExpressionMotion(reaction, reactionId, isThinking, isTalking);
+  const displayEmotion = isThinking ? 'thinking' : reaction.emotion;
   return (
     <div className="character-container">
-      <div
-        ref={faceRef}
-        className={`
-          character-face
-          emotion-${reaction.emotion}
-          action-${reaction.action}
-          ${isThinking ? 'is-thinking' : ''}
-          ${isTalking && !isThinking ? 'is-talking' : ''}
-        `}
-        style={characterStyle}
-  >
-        <div className="character-eyes">
-          <span className="eye-wrapper">
-            <span className="character-eye"></span>
-          </span>
-
-          <span className="eye-wrapper">
-            <span className="character-eye"></span>
-          </span>
-        </div>
-
-        <div className="character-mouth"></div>
+      <div ref={motion.ref} className={`character-face ${motion.className}`} style={motion.style}
+        data-emotion={reaction.emotion} data-expression={displayEmotion} role="img"
+        aria-label={`기본 캐릭터: ${isThinking ? '생각하는 중' : EMOTION_CONFIG[reaction.emotion].label}`}>
+        <svg viewBox="0 0 200 200" className="basic-face-features" aria-hidden="true">
+          <ExpressionAccents emotion={displayEmotion} x={100} y={83} intensity={motion.intensity} />
+          <ExpressionEye emotion={displayEmotion} side="left" x={72} y={83} autoBlink />
+          <ExpressionEye emotion={displayEmotion} side="right" x={128} y={83} autoBlink />
+          <ExpressionMouth emotion={displayEmotion} x={100} y={127} talking={isTalking && !isThinking} />
+        </svg>
       </div>
     </div>
   );
 }
-
-export default BasicCharacter;

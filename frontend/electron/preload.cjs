@@ -9,6 +9,32 @@ contextBridge.exposeInMainWorld('step1', {
   toggleChat: () => {
     ipcRenderer.send('chat:toggle');
   },
+  openChat: () => ipcRenderer.send('chat:open'),
+  hideChat: () => ipcRenderer.send('chat:hide'),
+  openSettings: () => ipcRenderer.send('settings:open'),
+  getPersonaState: () => ipcRenderer.invoke('persona:get'),
+  setCharacterProfile: (type, profile) => ipcRenderer.invoke('persona:set', type, profile),
+  onPersonaChanged: (callback) => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('persona:changed', listener);
+    return () => ipcRenderer.removeListener('persona:changed', listener);
+  },
+  getChatFollow: () => ipcRenderer.invoke('chat:follow-get'),
+  setChatFollow: (follow) => ipcRenderer.send('chat:follow-set', follow),
+  onChatFollowChanged: (callback) => {
+    const listener = (_event, follow) => callback(follow);
+    ipcRenderer.on('chat:follow-changed', listener);
+    return () => ipcRenderer.removeListener('chat:follow-changed', listener);
+  },
+  moveChatWindow: (position) => ipcRenderer.send('chat:move', position),
+  finishChatMove: () => ipcRenderer.send('chat:move-end'),
+  getChatState: () => ipcRenderer.invoke('chat:state-get'),
+  submitChatMessage: (message) => ipcRenderer.invoke('chat:submit', message),
+  onChatStateChanged: (callback) => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('chat:state-changed', listener);
+    return () => ipcRenderer.removeListener('chat:state-changed', listener);
+  },
 
   // ========================================
   // 캐릭터 위치 이동
@@ -100,9 +126,8 @@ contextBridge.exposeInMainWorld('step1', {
   // AI 감정 및 애니메이션 동기화
   // ========================================
 
-  sendReaction: (reactionState) => {
-    ipcRenderer.send('character:reaction', reactionState);
-  },
+  getReactionState: () => ipcRenderer.invoke('character:reaction-get'),
+  updateReaction: (patch) => ipcRenderer.send('character:reaction-update', patch),
 
   onReactionChanged: (callback) => {
     const listener = (_event, reactionState) => {

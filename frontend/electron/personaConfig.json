@@ -1,0 +1,19 @@
+{
+  "personalities": {
+    "warm": { "label": "다정한 친구", "description": "공감하고 다독여 줘요.", "greetings": {"casual": "안녕! 오늘도 네 이야기를 들어줄게.", "polite": "안녕하세요! 편하게 이야기해 주세요.", "brief": "안녕! 언제든 이야기해."} },
+    "playful": { "label": "장난꾸러기", "description": "유쾌하고 에너지가 넘쳐요.", "greetings": {"casual": "안녕! 오늘도 신나게 뭐 해볼까?", "polite": "안녕하세요! 오늘은 어떤 재미있는 일이 펼쳐질까요?", "brief": "안녕! 놀아 볼까?"} },
+    "calm": { "label": "차분한 친구", "description": "느긋하고 편안하게 말해요.", "greetings": {"casual": "안녕. 천천히 이야기해도 괜찮아.", "polite": "안녕하세요. 편안하게 이야기 나눠요.", "brief": "안녕. 편하게 쉬어."} },
+    "focused": { "label": "든든한 파트너", "description": "정리하고 방향을 함께 찾아줘요.", "greetings": {"casual": "안녕! 오늘 함께할 목표가 있을까?", "polite": "안녕하세요. 오늘의 목표를 함께 정해 볼까요?", "brief": "안녕! 오늘 목표는?"} }
+  },
+  "tones": {
+    "casual": { "label": "친근한 반말", "description": "오래 알고 지낸 친구처럼" },
+    "polite": { "label": "부드러운 존댓말", "description": "예의 있고 편안하게" },
+    "brief": { "label": "짧고 담백하게", "description": "핵심을 간결한 반말로" }
+  },
+  "defaults": {
+    "basic": { "name": "모찌", "personality": "warm", "tone": "casual" },
+    "illustration": { "name": "루나", "personality": "calm", "tone": "polite" },
+    "pomeranian": { "name": "포미", "personality": "playful", "tone": "casual" },
+    "custom": { "name": "내 친구", "personality": "warm", "tone": "casual" }
+  }
+}

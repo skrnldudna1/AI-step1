@@ -10,7 +10,7 @@ from io import BytesIO
 from app.services.ai_service import ai_service
 from app.services.character_service import character_service
 from app.services.rig_service import rig_service
-from app.schemas.ai import AIResponse
+from app.schemas.ai import AIResponse, CharacterProfile
 
 
 # FastAPI 애플리케이션 생성
@@ -41,6 +41,7 @@ app.mount(
 # 채팅 요청 데이터
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
+    profile: CharacterProfile | None = None
 
 
 # 기본 API
@@ -63,7 +64,7 @@ def health_check():
 # 채팅 API
 @app.post("/api/chat", response_model=AIResponse)
 def chat(request: ChatRequest) -> AIResponse:
-    return ai_service.chat(request.message)
+    return ai_service.chat(request.message, request.profile)
 
 
 # ========================================

@@ -1,12 +1,5 @@
-export type Emotion = "neutral" | "happy" | "sad" | "surprised";
-
-export type Action = "idle" | "nod" | "shake" | "bounce";
-
-export interface CharacterReaction {
-  emotion: Emotion;
-  intensity: number;
-  action: Action;
-}
+import type { CharacterProfile } from '../persona';
+import type { CharacterReaction } from '../types/character';
 
 export interface ChatResponse {
   reply: string;
@@ -14,14 +7,15 @@ export interface ChatResponse {
 }
 
 export async function sendChatMessage(
-  message: string
+  message: string,
+  profile?: CharacterProfile
 ): Promise<ChatResponse> {
   const response = await fetch("http://127.0.0.1:8000/api/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, profile }),
   });
 
   if (!response.ok) {

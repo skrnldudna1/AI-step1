@@ -1,0 +1,13 @@
+{
+  "neutral": {"label": "기본", "icon": "😌", "illustration": "neutral.png", "fallback": "neutral"},
+  "happy": {"label": "기쁨", "icon": "😊", "illustration": "happy.png", "fallback": "happy"},
+  "excited": {"label": "신남", "icon": "🤩", "illustration": "excited.png", "fallback": "happy"},
+  "sad": {"label": "슬픔", "icon": "😢", "illustration": "sad.png", "fallback": "sad"},
+  "shy": {"label": "부끄러움", "icon": "😳", "illustration": "shy.png", "fallback": "happy"},
+  "angry": {"label": "화남", "icon": "😠", "illustration": "angry.png", "fallback": "sad"},
+  "confused": {"label": "당황", "icon": "😕", "illustration": "confused.png", "fallback": "surprised"},
+  "sleepy": {"label": "졸림", "icon": "😴", "illustration": "sleepy.png", "fallback": "neutral"},
+  "surprised": {"label": "놀람", "icon": "😮", "illustration": "surprised.png", "fallback": "surprised"},
+  "playful": {"label": "장난기", "icon": "😉", "illustration": "playful.png", "fallback": "happy"},
+  "affectionate": {"label": "애정", "icon": "🥰", "illustration": "affectionate.png", "fallback": "happy"}
+}

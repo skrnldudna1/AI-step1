@@ -8,6 +8,7 @@ import type {
 } from '../../types/rig';
 
 import './CharacterUploader.css';
+import StudioIcon from '../StudioIcon';
 
 const API_URL = 'http://127.0.0.1:8000';
 
@@ -245,7 +246,17 @@ export default function CharacterUploader({
         parts: data.rig.parts.map((part) => ({
           ...part,
           src: new URL(part.src, baseUrl).href,
+          variants: part.variants
+            ? Object.fromEntries(Object.entries(part.variants).map(([emotion, src]) => [emotion, new URL(src, baseUrl).href]))
+            : undefined,
         })),
+
+        expressions: Object.fromEntries(
+          Object.entries(data.rig.expressions ?? {}).map(([emotion, parts]) => [
+            emotion,
+            Object.fromEntries(Object.entries(parts).map(([part, src]) => [part, new URL(src, baseUrl).href])),
+          ])
+        ) as CharacterRig['expressions'],
 
         mouthVariants: data.rig.mouthVariants
           ? {
@@ -321,9 +332,9 @@ export default function CharacterUploader({
           />
         ) : (
           <div className="upload-placeholder">
-            <span>＋</span>
+            <span className="upload-symbol"><StudioIcon name="upload" width="22" height="22" /></span>
             <p>캐릭터 이미지 선택</p>
-            <small>PNG, JPG, WEBP</small>
+            <small>PNG, JPG, WEBP · 최대 10MB</small>
           </div>
         )}
 

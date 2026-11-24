@@ -284,3 +284,19 @@
   color: #38865a;
   font-weight: 600;
 }
+
+/* Workshop card in the desktop studio */
+.workshop-card .character-uploader { width: 100%; max-width: none; background: none; border: 0; border-radius: 0; margin: 0; padding: 0; text-align: left; color: var(--studio-text); }
+.workshop-card .character-uploader h2 { font-size: 21px; letter-spacing: -.045em; margin-bottom: 7px; }
+.workshop-card .uploader-description { color: var(--studio-muted); margin: 0 0 15px; font-size: 12px; line-height: 1.55; }
+.workshop-card .upload-area { min-height: 180px; border: 1.5px dashed #d9bdab; border-radius: 14px; background: #faf4ed; text-align: center; }
+.workshop-card .upload-area:hover { background: #f5e8dc; }
+.workshop-card .upload-area:focus-within { outline: 2px solid var(--studio-accent); outline-offset: 3px; }
+.workshop-card .upload-symbol { display: grid; width: 43px; height: 43px; place-items: center; margin: 0 auto 10px; border-radius: 14px; color: var(--studio-accent); background: #f1e0d3; }
+.workshop-card .upload-placeholder p { color: #725744; font-size: 13px; font-weight: 700; margin: 0 0 5px; }
+.workshop-card .upload-placeholder small { color: var(--studio-muted); font-size: 11px; }
+.workshop-card .upload-analyze, .workshop-card .generate-button { background: var(--studio-accent); }
+.workshop-card .upload-analyze:hover, .workshop-card .generate-button:hover { background: var(--studio-accent-dark); }
+.workshop-card .upload-reset { border-color: var(--studio-border); color: var(--studio-muted); }
+.workshop-card .upload-filename, .workshop-card .upload-error { text-align: center; }
+.workshop-card .analysis-result { background: #f2f4ed; border-color: #dce4d6; }

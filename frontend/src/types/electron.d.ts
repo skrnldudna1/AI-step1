@@ -5,6 +5,8 @@ import type {
 } from './character';
 
 import type { CharacterRig } from './rig';
+import type { ChatState } from './chat';
+import type { CharacterProfile, PersonaState } from '../persona';
 
 interface ReactionState {
   reaction: CharacterReaction;
@@ -16,6 +18,20 @@ interface ReactionState {
 interface Step1API {
   // 채팅창 열기 및 숨기기
   toggleChat: () => void;
+  openChat: () => void;
+  hideChat: () => void;
+  openSettings: () => void;
+  getPersonaState: () => Promise<PersonaState | null>;
+  setCharacterProfile: (type: CharacterType, profile: CharacterProfile) => Promise<boolean>;
+  onPersonaChanged: (callback: (state: PersonaState) => void) => () => void;
+  getChatFollow: () => Promise<boolean | null>;
+  setChatFollow: (follow: boolean) => void;
+  onChatFollowChanged: (callback: (follow: boolean) => void) => () => void;
+  moveChatWindow: (position: { dx: number; dy: number }) => void;
+  finishChatMove: () => void;
+  getChatState: () => Promise<ChatState | null>;
+  submitChatMessage: (message: string) => Promise<boolean>;
+  onChatStateChanged: (callback: (state: ChatState) => void) => () => void;
 
   // 데스크톱 캐릭터 이동
   moveCharacter: (position: {
@@ -45,7 +61,8 @@ interface Step1API {
   ) => () => void;
 
   // AI 감정 및 애니메이션 동기화
-  sendReaction: (state: ReactionState) => void;
+  getReactionState: () => Promise<ReactionState | null>;
+  updateReaction: (patch: Partial<CharacterReaction>) => void;
 
   onReactionChanged: (
     callback: (state: ReactionState) => void

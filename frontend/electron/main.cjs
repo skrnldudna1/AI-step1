@@ -1,19 +1,82 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const { createChatSession } = require('./chatSession.cjs');
+const { getPopupBounds, getDetachedPopupBounds } = require('./popupBounds.cjs');
+const { characterTypes, validateProfile, normalizeProfiles } = require('./persona.cjs');
 
 const isDev = !app.isPackaged;
 
 let mainWindow = null;
 let characterWindow = null;
+let chatWindow = null;
+let chatOpenRequested = false;
+let chatReady = false;
+let chatFollowsCharacter = true;
+let detachedChatPosition = null;
 
 let isQuitting = false;
 
 app.on('before-quit', () => {
   isQuitting = true;
+  saveChatLayout();
+  chatSession.dispose();
+});
+
+function notify(win, channel, data) {
+  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+    win.webContents.send(channel, data);
+  }
+}
+
+const chatSession = createChatSession({
+  async request(message, profile) {
+    const response = await fetch('http://127.0.0.1:8000/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, profile }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!response.ok) throw new Error(`채팅 요청 실패: ${response.status}`);
+    const result = await response.json();
+    // Preserve the existing thinking animation even for quick mock replies.
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    return result;
+  },
+  publishChat(state) {
+    notify(mainWindow, 'chat:state-changed', state);
+    notify(chatWindow, 'chat:state-changed', state);
+  },
+  publishReaction(state) {
+    notify(mainWindow, 'character:reaction-changed', state);
+    notify(characterWindow, 'character:reaction-changed', state);
+  },
+});
+
+function isChatSender(event) {
+  return event.sender === mainWindow?.webContents || event.sender === chatWindow?.webContents;
+}
+
+ipcMain.handle('chat:state-get', (event) => {
+  if (!isChatSender(event)) return null;
+  return chatSession.getChat();
+});
+ipcMain.handle('chat:submit', (event, message) => {
+  if (!isChatSender(event)) return false;
+  return chatSession.submit(message);
+});
+ipcMain.handle('character:reaction-get', (event) => {
+  if (event.sender !== mainWindow?.webContents &&
+      event.sender !== characterWindow?.webContents) return null;
+  return chatSession.getReaction();
+});
+ipcMain.on('character:reaction-update', (event, patch) => {
+  if (event.sender !== mainWindow?.webContents) return;
+  chatSession.updateReaction(patch);
 });
 
 let selectedCharacter = 'pomeranian';
+let characterProfiles = normalizeProfiles(null);
 let customRig = null;
 let characterSize = null;
 let characterMouseIgnored = false;
@@ -87,6 +150,93 @@ function saveCharacterSize(size) {
   }
 }
 
+function profilesPath() {
+  return path.join(app.getPath('userData'), 'character-profiles.json');
+}
+
+function loadProfiles() {
+  try {
+    characterProfiles = normalizeProfiles(JSON.parse(fs.readFileSync(profilesPath(), 'utf8')));
+  } catch {
+    characterProfiles = normalizeProfiles(null);
+  }
+}
+
+function saveProfiles(profiles) {
+  try {
+    const filename = profilesPath();
+    fs.mkdirSync(path.dirname(filename), { recursive: true });
+    fs.writeFileSync(filename + '.tmp', JSON.stringify(profiles), 'utf8');
+    fs.renameSync(filename + '.tmp', filename);
+    return true;
+  } catch (error) {
+    console.warn('캐릭터 프로필 저장 실패:', error.message);
+    return false;
+  }
+}
+
+function personaState() {
+  return { characterType: selectedCharacter, profiles: characterProfiles };
+}
+
+function publishPersona() {
+  chatSession.setProfile(characterProfiles[selectedCharacter]);
+  const state = personaState();
+  notify(mainWindow, 'persona:changed', state);
+  notify(chatWindow, 'persona:changed', state);
+  notify(characterWindow, 'persona:changed', state);
+}
+
+ipcMain.handle('persona:get', (event) => {
+  if (!isChatSender(event) && event.sender !== characterWindow?.webContents) return null;
+  return personaState();
+});
+
+ipcMain.handle('persona:set', (event, type, profile) => {
+  if (event.sender !== mainWindow?.webContents || !characterTypes.includes(type)) return false;
+  const valid = validateProfile(profile);
+  if (!valid) return false;
+  const next = { ...characterProfiles, [type]: valid };
+  if (!saveProfiles(next)) return false;
+  characterProfiles = next;
+  publishPersona();
+  return true;
+});
+
+function chatLayoutPath() {
+  return path.join(app.getPath('userData'), 'mini-chat-layout.json');
+}
+
+function isValidPoint(point) {
+  return point && Number.isFinite(point.x) && Number.isFinite(point.y) &&
+    Math.abs(point.x) < 100000 && Math.abs(point.y) < 100000;
+}
+
+function loadChatLayout() {
+  try {
+    const layout = JSON.parse(fs.readFileSync(chatLayoutPath(), 'utf8'));
+    if (typeof layout.follow !== 'boolean') return;
+    if (isValidPoint(layout.position)) detachedChatPosition = layout.position;
+    chatFollowsCharacter = layout.follow || !detachedChatPosition;
+  } catch {
+    // First launch or a damaged preference: retain the default attached mode.
+  }
+}
+
+function saveChatLayout() {
+  try {
+    const filename = chatLayoutPath();
+    fs.mkdirSync(path.dirname(filename), { recursive: true });
+    fs.writeFileSync(filename + '.tmp', JSON.stringify({
+      follow: chatFollowsCharacter,
+      position: detachedChatPosition,
+    }), 'utf8');
+    fs.renameSync(filename + '.tmp', filename);
+  } catch (error) {
+    console.warn('미니 채팅창 위치 저장 실패:', error.message);
+  }
+}
+
 function getCharacterDimensions(size = characterSize ?? 100) {
   return {
     width: Math.round(BASE_CHARACTER_WIDTH * size / 100),
@@ -108,6 +258,7 @@ ipcMain.on('character:size-set', (event, size) => {
   if (characterWindow && !characterWindow.isDestroyed()) {
     const { width, height } = getCharacterDimensions(size);
     characterWindow.setContentSize(width, height);
+    positionChatWindow();
     characterWindow.webContents.send('character:size-changed', size);
   }
 });
@@ -123,10 +274,11 @@ const validCharacters = [
 // 캐릭터 선택 동기화
 // ========================================
 
-ipcMain.on('character:select', (_event, characterType) => {
-  if (!validCharacters.includes(characterType)) return;
+ipcMain.on('character:select', (event, characterType) => {
+  if (event.sender !== mainWindow?.webContents || !validCharacters.includes(characterType)) return;
 
   selectedCharacter = characterType;
+  publishPersona();
 
   characterWindow?.webContents.send(
     'character:changed',
@@ -164,29 +316,177 @@ ipcMain.handle('character:custom-rig-get', () => {
 // AI 감정 및 애니메이션 동기화
 // ========================================
 
-ipcMain.on('character:reaction', (_event, reactionState) => {
-  if (!reactionState || typeof reactionState !== 'object') return;
-
-  characterWindow?.webContents.send(
-    'character:reaction-changed',
-    reactionState
-  );
-});
-
 // ========================================
-// 채팅창 열기 및 숨기기
+// 독립 채팅 팝업 열기 및 숨기기
 // ========================================
 
-ipcMain.on('chat:toggle', () => {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-
-  if (mainWindow.isVisible()) {
-    mainWindow.hide();
-  } else {
-    mainWindow.show();
-    mainWindow.focus();
+function positionChatWindow() {
+  if (!chatFollowsCharacter) return;
+  if (!chatWindow || chatWindow.isDestroyed() ||
+      !characterWindow || characterWindow.isDestroyed()) return;
+  const pet = characterWindow.getBounds();
+  const display = screen.getDisplayMatching(pet);
+  const bounds = getPopupBounds(pet, display.workArea);
+  const current = chatWindow.getBounds();
+  if (Object.keys(bounds).some((key) => current[key] !== bounds[key])) {
+    chatWindow.setBounds(bounds, false);
   }
+}
+
+function getDetachedBounds(position) {
+  const display = screen.getDisplayMatching({ ...position, width: 360, height: 420 });
+  return getDetachedPopupBounds(position, display.workArea);
+}
+
+function rememberDetachedPosition() {
+  if (!chatWindow || chatWindow.isDestroyed()) return;
+  const { x, y } = chatWindow.getBounds();
+  detachedChatPosition = { x, y };
+}
+
+function keepChatOnScreen() {
+  if (chatFollowsCharacter) {
+    positionChatWindow();
+    return;
+  }
+  if (!chatWindow || chatWindow.isDestroyed()) return;
+  const bounds = getDetachedBounds(detachedChatPosition ?? chatWindow.getBounds());
+  const current = chatWindow.getBounds();
+  if (Object.keys(bounds).some(key => current[key] !== bounds[key])) {
+    chatWindow.setBounds(bounds, false);
+  }
+  rememberDetachedPosition();
+}
+
+function setChatFollow(follow, persist = true) {
+  if (follow === chatFollowsCharacter) return;
+  if (!follow) rememberDetachedPosition();
+  chatFollowsCharacter = follow;
+  notify(chatWindow, 'chat:follow-changed', follow);
+  if (follow) positionChatWindow();
+  if (persist) saveChatLayout();
+}
+
+ipcMain.handle('chat:follow-get', (event) => {
+  return event.sender === chatWindow?.webContents ? chatFollowsCharacter : null;
 });
+
+ipcMain.on('chat:follow-set', (event, follow) => {
+  if (event.sender !== chatWindow?.webContents || typeof follow !== 'boolean') return;
+  setChatFollow(follow);
+});
+
+ipcMain.on('chat:move', (event, position) => {
+  if (event.sender !== chatWindow?.webContents || chatWindow.isDestroyed() || !position) return;
+  const { dx, dy } = position;
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) ||
+      Math.abs(dx) > 10000 || Math.abs(dy) > 10000 || (!dx && !dy)) return;
+  // A real header drag detaches the popup before changing its native position.
+  setChatFollow(false, false);
+  const { x, y } = chatWindow.getBounds();
+  chatWindow.setPosition(Math.round(x + dx), Math.round(y + dy));
+  rememberDetachedPosition();
+});
+
+ipcMain.on('chat:move-end', (event) => {
+  if (event.sender !== chatWindow?.webContents || chatFollowsCharacter) return;
+  keepChatOnScreen();
+  saveChatLayout();
+});
+
+function showChatWindow() {
+  if (!characterWindow || characterWindow.isDestroyed()) return;
+  chatOpenRequested = true;
+  if (!chatWindow || chatWindow.isDestroyed()) createChatWindow();
+  keepChatOnScreen();
+  if (chatReady) {
+    chatWindow.show();
+    chatWindow.focus();
+  }
+}
+
+function hideChatWindow() {
+  chatOpenRequested = false;
+  if (!chatFollowsCharacter) {
+    keepChatOnScreen();
+    saveChatLayout();
+  }
+  if (chatWindow && !chatWindow.isDestroyed()) chatWindow.hide();
+}
+
+ipcMain.on('chat:toggle', (event) => {
+  if (event.sender !== characterWindow?.webContents) return;
+  if (chatOpenRequested) hideChatWindow();
+  else showChatWindow();
+});
+ipcMain.on('chat:open', (event) => {
+  if (event.sender === mainWindow?.webContents) showChatWindow();
+});
+ipcMain.on('chat:hide', (event) => {
+  if (event.sender === chatWindow?.webContents) hideChatWindow();
+});
+ipcMain.on('settings:open', (event) => {
+  if (event.sender !== chatWindow?.webContents) return;
+  hideChatWindow();
+  if (!mainWindow || mainWindow.isDestroyed()) createMainWindow();
+  mainWindow.show();
+  mainWindow.focus();
+});
+
+function createChatWindow() {
+  chatReady = false;
+  const pet = characterWindow.getBounds();
+  const bounds = !chatFollowsCharacter && detachedChatPosition
+    ? getDetachedBounds(detachedChatPosition)
+    : getPopupBounds(pet, screen.getDisplayMatching(pet).workArea);
+  const win = new BrowserWindow({
+    ...bounds,
+    show: false,
+    title: 'Step1 - Mini Chat',
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    acceptFirstMouse: true,
+    resizable: false,
+    backgroundColor: '#f8f7f4',
+    hasShadow: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+    },
+  });
+  chatWindow = win;
+  win.once('ready-to-show', () => {
+    chatReady = true;
+    if (chatOpenRequested) {
+      keepChatOnScreen();
+      win.show();
+      win.focus();
+    }
+  });
+  win.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      hideChatWindow();
+    }
+  });
+  win.on('closed', () => {
+    if (chatWindow === win) {
+      chatWindow = null;
+      chatReady = false;
+      chatOpenRequested = false;
+    }
+  });
+  const load = isDev
+    ? win.loadURL('http://localhost:5173/?mode=chat')
+    : win.loadFile(path.join(__dirname, '../dist/index.html'), { query: { mode: 'chat' } });
+  load.catch((error) => {
+    console.error('미니 채팅창 로드 실패:', error.message);
+    if (!win.isDestroyed()) win.destroy();
+  });
+}
 
 // ========================================
 // 데스크톱 캐릭터 위치 이동
@@ -206,6 +506,7 @@ ipcMain.on('character:move', (_event, position) => {
     Math.round(x + dx),
     Math.round(y + dy)
   );
+  positionChatWindow();
 });
 
 // ========================================
@@ -268,6 +569,7 @@ function createCharacterWindow() {
     backgroundColor: '#00000000',
 
     alwaysOnTop: true,
+    acceptFirstMouse: true,
     resizable: false,
     hasShadow: false,
 
@@ -284,6 +586,8 @@ function createCharacterWindow() {
   characterWindow.webContents.on('did-start-loading', () => setCharacterMouseIgnored(true));
   characterWindow.webContents.on('render-process-gone', () => setCharacterMouseIgnored(true));
   watchCharacterCursor(characterWindow);
+  characterWindow.on('move', positionChatWindow);
+  characterWindow.on('resize', positionChatWindow);
 
   if (isDev) {
     characterWindow.loadURL(
@@ -298,6 +602,7 @@ function createCharacterWindow() {
 
   characterWindow.on('closed', () => {
     characterWindow = null;
+    if (chatWindow && !chatWindow.isDestroyed()) chatWindow.destroy();
   });
 }
 
@@ -307,8 +612,13 @@ function createCharacterWindow() {
 
 app.whenReady().then(() => {
   characterSize = loadCharacterSize();
+  loadChatLayout();
+  loadProfiles();
+  chatSession.setProfile(characterProfiles[selectedCharacter]);
   createMainWindow();
   createCharacterWindow();
+  screen.on('display-metrics-changed', keepChatOnScreen);
+  screen.on('display-removed', keepChatOnScreen);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

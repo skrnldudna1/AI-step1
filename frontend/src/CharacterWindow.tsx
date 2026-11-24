@@ -180,14 +180,24 @@ useEffect(() => {
 
     if (!api) return;
 
-    const unsubscribe = api.onReactionChanged((state) => {
+    let active = true;
+    let received = false;
+    const apply = (state: NonNullable<Awaited<ReturnType<typeof api.getReactionState>>>) => {
       setReaction(state.reaction);
       setIsThinking(state.isThinking);
       setIsTalking(state.isTalking);
       setReactionId(state.reactionId);
+    };
+    const unsubscribe = api.onReactionChanged((state) => {
+      received = true;
+      apply(state);
     });
+    api.getReactionState?.().then((state) => {
+      if (active && !received && state) apply(state);
+    }).catch(console.error);
 
     return () => {
+      active = false;
       unsubscribe();
     };
   }, []);
@@ -296,12 +306,15 @@ useEffect(() => {
               reaction={reaction}
               isTalking={isTalking}
               isThinking={isThinking}
+              reactionId={reactionId}
             />
           </div>
         ) : characterType === 'pomeranian' ? (
           <PomeranianCharacter
-            emotion={reaction.emotion}
+            reaction={reaction}
             isTalking={isTalking}
+            isThinking={isThinking}
+            reactionId={reactionId}
           />
         ) : (
           <Character

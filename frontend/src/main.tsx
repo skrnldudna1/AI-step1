@@ -3,15 +3,14 @@ import { createRoot } from 'react-dom/client';
 
 import App from './App';
 import CharacterWindow from './CharacterWindow';
+import ChatWindow from './ChatWindow';
 
 import './index.css';
 
-const isCharacterWindow =
-  new URLSearchParams(window.location.search).get('mode') ===
-  'character';
+const mode = new URLSearchParams(window.location.search).get('mode');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isCharacterWindow ? <CharacterWindow /> : <App />}
+    {mode === 'character' ? <CharacterWindow /> : mode === 'chat' ? <ChatWindow /> : <App />}
   </StrictMode>
 );

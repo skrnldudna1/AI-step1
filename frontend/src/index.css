@@ -1,7 +1,15 @@
 :root {
-  font-family: Arial, sans-serif;
-  color: #333333;
-  background-color: #f8f7f4;
+  --studio-bg: #f5f1eb;
+  --studio-surface: #fffdf9;
+  --studio-border: #e9e1d8;
+  --studio-text: #3c322b;
+  --studio-muted: #817367;
+  --studio-accent: #b46a53;
+  --studio-accent-dark: #914b38;
+  --studio-soft: #f5e8dc;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+  color: var(--studio-text);
+  background-color: var(--studio-bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,4 +23,10 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+button, input { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 3px;
 }

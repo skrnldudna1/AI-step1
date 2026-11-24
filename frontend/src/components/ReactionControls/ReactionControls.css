@@ -1,65 +1,23 @@
-.reaction-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-  
-    margin-top: 30px;
-  }
-  
-  .reaction-controls h2 {
-    font-size: 18px;
-    color: #444444;
-  }
-  
-  .emotion-buttons,
-  .action-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  
-  .emotion-buttons button,
-  .action-buttons button {
-    padding: 10px 16px;
-    border: 1px solid #cccccc;
-    border-radius: 10px;
-  
-    background-color: white;
-    color: #333333;
-  
-    cursor: pointer;
-  }
-  
-  .emotion-buttons button:hover,
-  .action-buttons button:hover {
-    background-color: #f0e8dc;
-  }
-  
-  .intensity-control {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  
-    margin-top: 15px;
-    width: 250px;
-  }
-  
-  .intensity-control label {
-    font-size: 15px;
-    font-weight: 600;
-    color: #444444;
-  }
-  
-  .intensity-control input {
-    width: 100%;
-    cursor: pointer;
-    accent-color: #d8a7a7;
-  }
-  
-  .reaction-status {
-    font-size: 13px;
-    color: #777777;
-  }
+.reaction-controls { display: flex; flex-direction: column; align-items: stretch; }
+.reaction-controls h2 { margin: 0; color: var(--studio-text); font-size: 21px; letter-spacing: -.04em; }
+.reaction-description { color: var(--studio-muted); margin: 7px 0 16px; font-size: 12px; line-height: 1.55; }
+.emotion-preview { display: flex; align-items: center; gap: 12px; padding: 5px 12px 5px 2px; margin: 0 0 17px; background: radial-gradient(circle at 24% 50%,#fff9ef 28%,transparent 29%),#f6ebe0; border: 1px solid #eee2d7; border-radius: 12px; overflow: hidden; }
+.emotion-preview-art { display: flex; flex: 0 0 169px; justify-content: center; align-items: center; height: 165px; overflow: hidden; }
+.emotion-preview-caption { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.emotion-preview-caption small { font-size: 10px; font-weight: 700; color: var(--studio-muted); }
+.emotion-preview-caption strong { font-size: 17px; color: var(--studio-text); overflow-wrap: anywhere; }
+.emotion-preview-caption span { font-size: 12px; color: var(--studio-accent-dark); font-weight: 700; }
+@media (max-width: 400px) { .emotion-preview { gap: 5px; padding-right: 7px; } .emotion-preview-art { flex-basis: 155px; } }
+.control-label { color: #66574b; font-size: 12px; font-weight: 700; margin: 0 0 8px; }
+.emotion-buttons, .action-buttons { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 7px; margin-bottom: 17px; }
+.emotion-buttons button, .action-buttons button { min-height: 40px; padding: 8px 3px; border: 1px solid var(--studio-border); border-radius: 10px; background: var(--studio-surface); color: #62554b; font-size: 11px; font-weight: 650; cursor: pointer; white-space: nowrap; }
+.emotion-buttons button:hover, .action-buttons button:hover { border-color: #cfa691; background: #fcf7f1; }
+.emotion-buttons button[aria-pressed="true"], .action-buttons button[aria-pressed="true"] { border-color: #c48c73; background: #faede3; color: var(--studio-accent-dark); }
+.emotion-buttons button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 58px; white-space: normal; font-size: 11px; }
+.emotion-icon { font-size: 18px; line-height: 1.15; }
+.intensity-control { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding-top: 13px; border-top: 1px solid var(--studio-border); }
+.intensity-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; color: #66574b; }
+.intensity-head output { color: var(--studio-accent-dark); font-variant-numeric: tabular-nums; }
+.intensity-control input { width: 100%; accent-color: var(--studio-accent); margin: 0; cursor: pointer; }
+.reaction-status { display: flex; align-items: center; gap: 6px; color: var(--studio-muted); background: #f4efe8; border-radius: 9px; padding: 10px; margin: 14px 0 0; font-size: 11px; }
+.reaction-status strong { color: #674f40; }
