@@ -49,6 +49,7 @@ async function setup(storedFiles = new Map()) {
     setContentSize(width, height) { this.bounds = { ...this.bounds, width, height }; this.emit('resize'); }
     setBounds(bounds) { this.bounds = { ...bounds }; }
     setIgnoreMouseEvents(ignore) { this.ignore = ignore; }
+    setOpacity(opacity) { this.opacity = opacity; }
     destroy() { this.destroyed = true; this.emit('closed'); }
   }
   const electron = { app, screen, BrowserWindow, ipcMain };
@@ -157,6 +158,111 @@ test('pet opens one popup, follows size and move, and shares one chat with setti
   }
 });
 
+test('character toggles settings directly, hides mini chat on open, and ignores unauthorized settings senders', async () => {
+  const { app, windows, bridge } = await setup();
+  try {
+    const [settings, pet] = windows;
+    const settingsAPI = bridge(settings);
+    const petAPI = bridge(pet);
+    settings.hide();
+    settingsAPI.openSettings();
+    assert.equal(settings.visible, false);
+    petAPI.openSettings();
+    assert.equal(settings.visible, true);
+    assert.equal(settings.focused, true);
+    assert.equal(windows.length, 2);
+    petAPI.openSettings();
+    assert.equal(settings.visible, false);
+    petAPI.openSettings();
+    assert.equal(settings.visible, true);
+    petAPI.toggleChat();
+    const popup = windows[2];
+    popup.emit('ready-to-show');
+    assert.equal(popup.visible, true);
+    settings.hide();
+    petAPI.openSettings();
+    assert.equal(settings.visible, true);
+    assert.equal(popup.visible, false);
+    petAPI.openSettings();
+    assert.equal(settings.visible, false);
+    assert.equal(popup.visible, false);
+  } finally { app.emit('before-quit'); }
+});
+
+test('mini chat uses a transparent native window and syncs the whole-panel transparency preference', async () => {
+  const files = new Map();
+  const first = await setup(files);
+  try {
+    const [settings, pet] = first.windows;
+    const settingsAPI = first.bridge(settings);
+    const petAPI = first.bridge(pet);
+    petAPI.toggleChat();
+    const popup = first.windows[2];
+    const popupAPI = first.bridge(popup);
+    const changes = [];
+    popupAPI.onChatOpacityChanged(value => changes.push(value));
+    assert.equal(await popupAPI.getChatOpacity(), 100);
+    assert.equal(popup.options.transparent, true);
+    assert.equal(popup.options.backgroundColor, '#00000000');
+    assert.equal(popup.opacity, undefined);
+    assert.equal(await settingsAPI.getChatOpacity(), null);
+    settingsAPI.setChatOpacity(40);
+    petAPI.setChatOpacity(55);
+    popupAPI.setChatOpacity('40');
+    popupAPI.setChatOpacity(NaN);
+    assert.equal(await popupAPI.getChatOpacity(), 100);
+    popupAPI.setChatOpacity(73);
+    assert.equal(await popupAPI.getChatOpacity(), 75);
+    popupAPI.setChatOpacity(0);
+    assert.equal(await popupAPI.getChatOpacity(), 40);
+    popupAPI.setChatOpacity(130);
+    assert.equal(await popupAPI.getChatOpacity(), 100);
+    popupAPI.setChatOpacity(65);
+    assert.deepEqual(changes, [75, 40, 100, 65]);
+    popupAPI.hideChat();
+    petAPI.toggleChat();
+    assert.equal(await popupAPI.getChatOpacity(), 65);
+    // The renderer composites the entire panel onto the transparent native window.
+    assert.equal(popup.opacity, undefined);
+    assert.equal(pet.opacity, undefined);
+    assert.equal(settings.opacity, undefined);
+    const saved = JSON.parse(files.get('/mock-profile/mini-chat-layout.json'));
+    assert.equal(saved.opacity, 65);
+  } finally { first.app.emit('before-quit'); }
+  const second = await setup(files);
+  try {
+    second.bridge(second.windows[1]).toggleChat();
+    const popup = second.windows[2];
+    assert.equal(popup.options.transparent, true);
+    assert.equal(popup.opacity, undefined);
+    assert.equal(await second.bridge(popup).getChatOpacity(), 65);
+  } finally { second.app.emit('before-quit'); }
+});
+
+test('clearing chat from the mini popup updates both windows and resets pet expression', async () => {
+  const { app, windows, bridge, reply } = await setup();
+  try {
+    const main = bridge(windows[0]);
+    const pet = bridge(windows[1]);
+    pet.toggleChat();
+    const popup = bridge(windows[2]);
+    const mainUpdates = [], miniUpdates = [];
+    main.onChatStateChanged(state => mainUpdates.push(state));
+    popup.onChatStateChanged(state => miniUpdates.push(state));
+    assert.equal(await popup.submitChatMessage('공유 메시지'), true);
+    assert.equal(await popup.clearChat(), false);
+    reply({ reply: '공유 응답', reaction: { emotion: 'happy', action: 'idle', intensity: .9 } });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(await pet.clearChat(), false);
+    assert.equal((await main.getChatState()).messages.length, 3);
+    assert.equal(await popup.clearChat(), true);
+    assert.equal(mainUpdates.at(-1).messages.length, 1);
+    assert.deepEqual(mainUpdates.at(-1), miniUpdates.at(-1));
+    assert.deepEqual((await pet.getReactionState()).reaction, { emotion: 'neutral', intensity: .5, action: 'idle' });
+    assert.equal((await pet.getReactionState()).isTalking, false);
+  } finally { app.emit('before-quit'); }
+});
+
 test('per-character profiles sync into the popup and backend body, survive restart, and reject invalid edits', async () => {
   const files = new Map();
   const first = await setup(files);
@@ -234,7 +340,7 @@ test('drag detaches popup, pet moves independently, and reconnect restores follo
     assert.deepEqual(popup.bounds, detached);
     assert.equal(popup.visible, true);
     const saved = JSON.parse(storedFiles.get('/mock-profile/mini-chat-layout.json'));
-    assert.deepEqual(saved, { follow: false, position: { x: detached.x, y: detached.y } });
+    assert.deepEqual(saved, { follow: false, position: { x: detached.x, y: detached.y }, opacity: 100, size: { width: 360, height: 420 } });
 
     // Display changes keep the detached popup visible without linking it to the pet.
     screen.workArea = { x: 0, y: 20, width: 800, height: 600 };
@@ -283,4 +389,57 @@ test('saved free-move mode and position are restored in a new Electron session',
   } finally {
     second.app.emit('before-quit');
   }
+});
+
+test('mini chat resizes from native edge handles, retains follow mode, and remembers its dimensions', async () => {
+  const files = new Map();
+  const first = await setup(files);
+  try {
+    const [settings, pet] = first.windows;
+    const settingsAPI = first.bridge(settings);
+    const petAPI = first.bridge(pet);
+    petAPI.toggleChat();
+    const popup = first.windows[2];
+    const popupAPI = first.bridge(popup);
+    const initial = { ...popup.bounds };
+    settingsAPI.startChatResize('se', 1);
+    settingsAPI.resizeChatWindow({ id: 1, dx: 100, dy: 50 });
+    assert.deepEqual(popup.bounds, initial);
+    popupAPI.startChatResize('se', 1);
+    popupAPI.resizeChatWindow({ id: 2, dx: 200, dy: 200 });
+    popupAPI.resizeChatWindow({ id: 1, dx: NaN, dy: 50 });
+    assert.deepEqual(popup.bounds, initial);
+    popupAPI.resizeChatWindow({ id: 1, dx: 80, dy: 70 });
+    assert.equal(popup.bounds.width, 440);
+    assert.equal(popup.bounds.height, 490);
+    popupAPI.resizeChatWindow({ id: 1, dx: 100, dy: 85 });
+    assert.equal(popup.bounds.width, 460);
+    assert.equal(popup.bounds.height, 505);
+    popupAPI.finishChatResize(1);
+    assert.equal(await popupAPI.getChatFollow(), true);
+    petAPI.moveCharacter({ dx: 20, dy: 0 });
+    assert.equal(popup.bounds.width, 460);
+    assert.equal(popup.bounds.height, 505);
+    popupAPI.setChatFollow(false);
+    const prior = { ...popup.bounds };
+    popupAPI.startChatResize('nw', 3);
+    popupAPI.resizeChatWindow({ id: 3, dx: -50, dy: -30 });
+    popupAPI.finishChatResize(3);
+    assert.equal(popup.bounds.x + popup.bounds.width, prior.x + prior.width);
+    assert.equal(popup.bounds.y + popup.bounds.height, prior.y + prior.height);
+    assert.deepEqual(JSON.parse(files.get('/mock-profile/mini-chat-layout.json')).size, { width: 510, height: 535 });
+    assert.equal(await popupAPI.getChatFollow(), false);
+    popupAPI.hideChat();
+    petAPI.toggleChat();
+    assert.equal(popup.bounds.width, 510);
+    assert.equal(popup.bounds.height, 535);
+  } finally { first.app.emit('before-quit'); }
+  const second = await setup(files);
+  try {
+    second.bridge(second.windows[1]).toggleChat();
+    const popup = second.windows[2];
+    assert.equal(popup.bounds.width, 510);
+    assert.equal(popup.bounds.height, 535);
+    assert.equal(await second.bridge(popup).getChatFollow(), false);
+  } finally { second.app.emit('before-quit'); }
 });

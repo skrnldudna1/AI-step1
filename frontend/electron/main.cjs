@@ -1,8 +1,9 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { createChatSession } = require('./chatSession.cjs');
-const { getPopupBounds, getDetachedPopupBounds } = require('./popupBounds.cjs');
+const { createChatGPTConnection, createPrivateStore, ConnectionError } = require('./chatgptConnection.cjs');
+const { DEFAULT_POPUP_SIZE, RESIZE_EDGES, normalizePopupSize, getPopupBounds, getDetachedPopupBounds, resizePopupBounds } = require('./popupBounds.cjs');
 const { characterTypes, validateProfile, normalizeProfiles } = require('./persona.cjs');
 
 const isDev = !app.isPackaged;
@@ -14,13 +15,19 @@ let chatOpenRequested = false;
 let chatReady = false;
 let chatFollowsCharacter = true;
 let detachedChatPosition = null;
+let chatOpacity = 100;
+let chatPreferredSize = { ...DEFAULT_POPUP_SIZE };
+let chatResize = null;
+let rigAnalysisBusy = false;
 
 let isQuitting = false;
 
 app.on('before-quit', () => {
   isQuitting = true;
+  finishChatResize();
   saveChatLayout();
   chatSession.dispose();
+  chatgptConnection.dispose();
 });
 
 function notify(win, channel, data) {
@@ -29,12 +36,24 @@ function notify(win, channel, data) {
   }
 }
 
+const chatgptConnection = createChatGPTConnection({
+  store: createPrivateStore(app.getPath('userData'), safeStorage),
+  openBrowser: url => shell.openExternal(url),
+  publish(state) {
+    notify(mainWindow, 'ai:connection-changed', state);
+    notify(chatWindow, 'ai:connection-changed', state);
+  },
+});
+
 const chatSession = createChatSession({
-  async request(message, profile) {
+  contextKey: chatgptConnection.contextKey,
+  describeError: error => error instanceof ConnectionError ? error.message : '서버 연결에 문제가 발생했어. 잠시 후 다시 시도해 줘.',
+  async request(message, profile, history = [], previousSituation) {
+    if (chatgptConnection.view().mode === 'chatgpt') return chatgptConnection.generate(message, profile, history, previousSituation);
     const response = await fetch('http://127.0.0.1:8000/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, profile }),
+      body: JSON.stringify({ message, profile, history, previous_situation: previousSituation }),
       signal: AbortSignal.timeout(60000),
     });
     if (!response.ok) throw new Error(`채팅 요청 실패: ${response.status}`);
@@ -63,7 +82,35 @@ ipcMain.handle('chat:state-get', (event) => {
 });
 ipcMain.handle('chat:submit', (event, message) => {
   if (!isChatSender(event)) return false;
+  const connection = chatgptConnection.view();
+  if (connection.pending || (connection.mode === 'chatgpt' && (!connection.connected || !connection.model))) return false;
   return chatSession.submit(message);
+});
+ipcMain.handle('chat:clear', (event) => isChatSender(event) ? chatSession.clear() : false);
+
+ipcMain.handle('ai:connection-get', event => isChatSender(event) ? chatgptConnection.view() : null);
+function connectionAction(event, action) {
+  if (event.sender !== mainWindow?.webContents || chatSession.getChat().isLoading || rigAnalysisBusy) return null;
+  return action();
+}
+ipcMain.handle('ai:signin', (event, id) => connectionAction(event, () => chatgptConnection.signIn(typeof id === 'string' ? id : null)));
+ipcMain.handle('ai:cancel', event => connectionAction(event, () => { chatgptConnection.cancelLogin(); return chatgptConnection.view(); }));
+ipcMain.handle('ai:select-account', (event, id) => connectionAction(event, () => chatgptConnection.select(id)));
+ipcMain.handle('ai:backend', event => connectionAction(event, () => chatgptConnection.useBackend()));
+ipcMain.handle('ai:signout', event => connectionAction(event, () => chatgptConnection.signOut()));
+ipcMain.handle('ai:select-model', (event, id) => connectionAction(event, () => chatgptConnection.selectModel(id)));
+ipcMain.handle('ai:refresh-models', event => connectionAction(event, async () => { await chatgptConnection.refreshModels(); return chatgptConnection.view(); }));
+ipcMain.handle('ai:welcome-dismiss', event => connectionAction(event, () => chatgptConnection.dismissWelcome()));
+ipcMain.on('ai:usage', event => { if (isChatSender(event)) void shell.openExternal('https://chatgpt.com/settings/usage'); });
+ipcMain.handle('rig:vision-analyze', async (event, images) => {
+  if (event.sender !== mainWindow?.webContents || rigAnalysisBusy)
+    return { ok: false, error: '다른 이미지 분석이 진행 중이에요.' };
+  rigAnalysisBusy = true;
+  try {
+    return { ok: true, regions: await chatgptConnection.analyzeRigImages(images) };
+  } catch (error) {
+    return { ok: false, error: error instanceof ConnectionError ? error.message : '이미지 분석에 실패했어요.' };
+  } finally { rigAnalysisBusy = false; }
 });
 ipcMain.handle('character:reaction-get', (event) => {
   if (event.sender !== mainWindow?.webContents &&
@@ -215,6 +262,9 @@ function isValidPoint(point) {
 function loadChatLayout() {
   try {
     const layout = JSON.parse(fs.readFileSync(chatLayoutPath(), 'utf8'));
+    if (Number.isFinite(layout.opacity)) chatOpacity = normalizeChatOpacity(layout.opacity);
+    if (layout.size && Number.isFinite(layout.size.width) && Number.isFinite(layout.size.height))
+      chatPreferredSize = normalizePopupSize(layout.size);
     if (typeof layout.follow !== 'boolean') return;
     if (isValidPoint(layout.position)) detachedChatPosition = layout.position;
     chatFollowsCharacter = layout.follow || !detachedChatPosition;
@@ -230,11 +280,17 @@ function saveChatLayout() {
     fs.writeFileSync(filename + '.tmp', JSON.stringify({
       follow: chatFollowsCharacter,
       position: detachedChatPosition,
+      opacity: chatOpacity,
+      size: chatPreferredSize,
     }), 'utf8');
     fs.renameSync(filename + '.tmp', filename);
   } catch (error) {
     console.warn('미니 채팅창 위치 저장 실패:', error.message);
   }
+}
+
+function normalizeChatOpacity(value) {
+  return Math.min(100, Math.max(40, Math.round(value / 5) * 5));
 }
 
 function getCharacterDimensions(size = characterSize ?? 100) {
@@ -321,12 +377,12 @@ ipcMain.handle('character:custom-rig-get', () => {
 // ========================================
 
 function positionChatWindow() {
-  if (!chatFollowsCharacter) return;
+  if (!chatFollowsCharacter || chatResize) return;
   if (!chatWindow || chatWindow.isDestroyed() ||
       !characterWindow || characterWindow.isDestroyed()) return;
   const pet = characterWindow.getBounds();
   const display = screen.getDisplayMatching(pet);
-  const bounds = getPopupBounds(pet, display.workArea);
+  const bounds = getPopupBounds(pet, display.workArea, chatPreferredSize);
   const current = chatWindow.getBounds();
   if (Object.keys(bounds).some((key) => current[key] !== bounds[key])) {
     chatWindow.setBounds(bounds, false);
@@ -334,8 +390,8 @@ function positionChatWindow() {
 }
 
 function getDetachedBounds(position) {
-  const display = screen.getDisplayMatching({ ...position, width: 360, height: 420 });
-  return getDetachedPopupBounds(position, display.workArea);
+  const display = screen.getDisplayMatching({ ...position, ...chatPreferredSize });
+  return getDetachedPopupBounds(position, display.workArea, chatPreferredSize);
 }
 
 function rememberDetachedPosition() {
@@ -345,6 +401,7 @@ function rememberDetachedPosition() {
 }
 
 function keepChatOnScreen() {
+  if (chatResize) return;
   if (chatFollowsCharacter) {
     positionChatWindow();
     return;
@@ -371,13 +428,23 @@ ipcMain.handle('chat:follow-get', (event) => {
   return event.sender === chatWindow?.webContents ? chatFollowsCharacter : null;
 });
 
+ipcMain.handle('chat:opacity-get', event => event.sender === chatWindow?.webContents ? chatOpacity : null);
+ipcMain.on('chat:opacity-set', (event, value) => {
+  if (event.sender !== chatWindow?.webContents || !Number.isFinite(value)) return;
+  const next = normalizeChatOpacity(value);
+  if (next === chatOpacity) return;
+  chatOpacity = next;
+  saveChatLayout();
+  notify(chatWindow, 'chat:opacity-changed', chatOpacity);
+});
+
 ipcMain.on('chat:follow-set', (event, follow) => {
-  if (event.sender !== chatWindow?.webContents || typeof follow !== 'boolean') return;
+  if (event.sender !== chatWindow?.webContents || typeof follow !== 'boolean' || chatResize) return;
   setChatFollow(follow);
 });
 
 ipcMain.on('chat:move', (event, position) => {
-  if (event.sender !== chatWindow?.webContents || chatWindow.isDestroyed() || !position) return;
+  if (event.sender !== chatWindow?.webContents || chatWindow.isDestroyed() || !position || chatResize) return;
   const { dx, dy } = position;
   if (!Number.isFinite(dx) || !Number.isFinite(dy) ||
       Math.abs(dx) > 10000 || Math.abs(dy) > 10000 || (!dx && !dy)) return;
@@ -394,6 +461,39 @@ ipcMain.on('chat:move-end', (event) => {
   saveChatLayout();
 });
 
+// Transparent windows remain frameless and non-resizable by the native frame.
+// The renderer's edge handles ask the main process to change native bounds.
+function finishChatResize() {
+  if (!chatResize) return;
+  const changed = chatResize.changed;
+  chatResize = null;
+  if (!chatFollowsCharacter) rememberDetachedPosition();
+  if (changed) saveChatLayout();
+}
+
+ipcMain.on('chat:resize-start', (event, edge, id) => {
+  if (event.sender !== chatWindow?.webContents || chatWindow.isDestroyed() || chatResize ||
+      !RESIZE_EDGES.includes(edge) || !Number.isSafeInteger(id)) return;
+  const initial = chatWindow.getBounds();
+  chatResize = { id, edge, initial, workArea: screen.getDisplayMatching(initial).workArea, changed: false };
+});
+ipcMain.on('chat:resize-update', (event, payload) => {
+  if (event.sender !== chatWindow?.webContents || chatWindow.isDestroyed() || !chatResize || !payload ||
+      payload.id !== chatResize.id || !Number.isFinite(payload.dx) || !Number.isFinite(payload.dy) ||
+      Math.abs(payload.dx) > 10000 || Math.abs(payload.dy) > 10000) return;
+  const bounds = resizePopupBounds(chatResize.initial, chatResize.edge, payload.dx, payload.dy, chatResize.workArea);
+  const current = chatWindow.getBounds();
+  if (Object.keys(bounds).every(key => bounds[key] === current[key])) return;
+  chatResize.changed = true;
+  chatWindow.setBounds(bounds, false);
+  const actual = chatWindow.getBounds();
+  chatPreferredSize = normalizePopupSize(actual);
+  if (!chatFollowsCharacter) rememberDetachedPosition();
+});
+ipcMain.on('chat:resize-end', (event, id) => {
+  if (event.sender === chatWindow?.webContents && chatResize?.id === id) finishChatResize();
+});
+
 function showChatWindow() {
   if (!characterWindow || characterWindow.isDestroyed()) return;
   chatOpenRequested = true;
@@ -406,6 +506,7 @@ function showChatWindow() {
 }
 
 function hideChatWindow() {
+  finishChatResize();
   chatOpenRequested = false;
   if (!chatFollowsCharacter) {
     keepChatOnScreen();
@@ -426,9 +527,17 @@ ipcMain.on('chat:hide', (event) => {
   if (event.sender === chatWindow?.webContents) hideChatWindow();
 });
 ipcMain.on('settings:open', (event) => {
-  if (event.sender !== chatWindow?.webContents) return;
+  if (event.sender !== chatWindow?.webContents && event.sender !== characterWindow?.webContents) return;
+  // A double click from the character toggles the settings window. Other
+  // explicit settings actions still always open it.
+  if (event.sender === characterWindow?.webContents && mainWindow && !mainWindow.isDestroyed() &&
+      mainWindow.isVisible() && !mainWindow.isMinimized?.()) {
+    mainWindow.hide();
+    return;
+  }
   hideChatWindow();
   if (!mainWindow || mainWindow.isDestroyed()) createMainWindow();
+  if (mainWindow.isMinimized?.()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
 });
@@ -438,7 +547,7 @@ function createChatWindow() {
   const pet = characterWindow.getBounds();
   const bounds = !chatFollowsCharacter && detachedChatPosition
     ? getDetachedBounds(detachedChatPosition)
-    : getPopupBounds(pet, screen.getDisplayMatching(pet).workArea);
+    : getPopupBounds(pet, screen.getDisplayMatching(pet).workArea, chatPreferredSize);
   const win = new BrowserWindow({
     ...bounds,
     show: false,
@@ -448,8 +557,9 @@ function createChatWindow() {
     skipTaskbar: true,
     acceptFirstMouse: true,
     resizable: false,
-    backgroundColor: '#f8f7f4',
-    hasShadow: true,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
@@ -474,6 +584,7 @@ function createChatWindow() {
   });
   win.on('closed', () => {
     if (chatWindow === win) {
+      finishChatResize();
       chatWindow = null;
       chatReady = false;
       chatOpenRequested = false;
@@ -611,14 +722,16 @@ function createCharacterWindow() {
 // ========================================
 
 app.whenReady().then(() => {
+  chatgptConnection.initialize();
   characterSize = loadCharacterSize();
   loadChatLayout();
   loadProfiles();
   chatSession.setProfile(characterProfiles[selectedCharacter]);
   createMainWindow();
   createCharacterWindow();
-  screen.on('display-metrics-changed', keepChatOnScreen);
-  screen.on('display-removed', keepChatOnScreen);
+  const onDisplayChanged = () => { finishChatResize(); keepChatOnScreen(); };
+  screen.on('display-metrics-changed', onDisplayChanged);
+  screen.on('display-removed', onDisplayChanged);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

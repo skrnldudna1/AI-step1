@@ -21,3 +21,9 @@
 .intensity-control input { width: 100%; accent-color: var(--studio-accent); margin: 0; cursor: pointer; }
 .reaction-status { display: flex; align-items: center; gap: 6px; color: var(--studio-muted); background: #f4efe8; border-radius: 9px; padding: 10px; margin: 14px 0 0; font-size: 11px; }
 .reaction-status strong { color: #674f40; }
+.emotion-preview { background: var(--studio-tint); border-color: transparent; }
+.control-label, .intensity-head, .reaction-status strong { color: var(--studio-text); }
+.emotion-buttons button, .action-buttons button { color: var(--studio-text); }
+.emotion-buttons button:hover, .action-buttons button:hover { background: var(--studio-tint); border-color: var(--studio-accent); }
+.emotion-buttons button[aria-pressed="true"], .action-buttons button[aria-pressed="true"] { background: white; border-color: var(--studio-accent); color: var(--studio-accent-dark); }
+.reaction-status { background: var(--studio-tint); }

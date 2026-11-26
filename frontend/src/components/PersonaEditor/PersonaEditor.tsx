@@ -39,7 +39,7 @@ export default function PersonaEditor({ type, characterLabel, profile, onSave }:
   return (
     <form className="persona-editor" onSubmit={handleSave}>
       <header className="card-heading">
-        <div><p className="section-kicker">03 / PERSONALITY</p><h2 id="persona-title">우리만의 프로필</h2></div>
+        <div><h2 id="persona-title">우리만의 프로필</h2></div>
         <span className="persona-character-chip"><span /> {characterLabel} 설정 중</span>
       </header>
       <p className="card-description">캐릭터를 선택한 뒤 이름과 성격을 정해 주세요. 네 가지 캐릭터의 설정은 각각 저장돼요.</p>

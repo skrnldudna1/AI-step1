@@ -20,6 +20,13 @@ contextBridge.exposeInMainWorld('step1', {
     return () => ipcRenderer.removeListener('persona:changed', listener);
   },
   getChatFollow: () => ipcRenderer.invoke('chat:follow-get'),
+  getChatOpacity: () => ipcRenderer.invoke('chat:opacity-get'),
+  setChatOpacity: opacity => ipcRenderer.send('chat:opacity-set', opacity),
+  onChatOpacityChanged: callback => {
+    const listener = (_event, opacity) => callback(opacity);
+    ipcRenderer.on('chat:opacity-changed', listener);
+    return () => ipcRenderer.removeListener('chat:opacity-changed', listener);
+  },
   setChatFollow: (follow) => ipcRenderer.send('chat:follow-set', follow),
   onChatFollowChanged: (callback) => {
     const listener = (_event, follow) => callback(follow);
@@ -28,8 +35,28 @@ contextBridge.exposeInMainWorld('step1', {
   },
   moveChatWindow: (position) => ipcRenderer.send('chat:move', position),
   finishChatMove: () => ipcRenderer.send('chat:move-end'),
+  startChatResize: (edge, id) => ipcRenderer.send('chat:resize-start', edge, id),
+  resizeChatWindow: (payload) => ipcRenderer.send('chat:resize-update', payload),
+  finishChatResize: id => ipcRenderer.send('chat:resize-end', id),
   getChatState: () => ipcRenderer.invoke('chat:state-get'),
   submitChatMessage: (message) => ipcRenderer.invoke('chat:submit', message),
+  clearChat: () => ipcRenderer.invoke('chat:clear'),
+  getAIConnection: () => ipcRenderer.invoke('ai:connection-get'),
+  signInChatGPT: id => ipcRenderer.invoke('ai:signin', id),
+  cancelAIConnection: () => ipcRenderer.invoke('ai:cancel'),
+  selectChatGPTAccount: id => ipcRenderer.invoke('ai:select-account', id),
+  useBackendAI: () => ipcRenderer.invoke('ai:backend'),
+  signOutChatGPT: () => ipcRenderer.invoke('ai:signout'),
+  selectChatGPTModel: id => ipcRenderer.invoke('ai:select-model', id),
+  refreshChatGPTModels: () => ipcRenderer.invoke('ai:refresh-models'),
+  dismissChatGPTWelcome: () => ipcRenderer.invoke('ai:welcome-dismiss'),
+  openChatGPTUsage: () => ipcRenderer.send('ai:usage'),
+  analyzeRigImages: images => ipcRenderer.invoke('rig:vision-analyze', images),
+  onAIConnectionChanged: callback => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('ai:connection-changed', listener);
+    return () => ipcRenderer.removeListener('ai:connection-changed', listener);
+  },
   onChatStateChanged: (callback) => {
     const listener = (_event, state) => callback(state);
     ipcRenderer.on('chat:state-changed', listener);

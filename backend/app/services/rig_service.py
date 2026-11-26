@@ -2,12 +2,13 @@ import cv2
 import numpy as np
 import json
 
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
 from app.services.character_service import character_service
+from app.schemas.rig import RigRegion
 
 
 class RigService:
@@ -97,14 +98,17 @@ class RigService:
             )
 
 
-    def generate(self, contents: bytes) -> dict:
+    def generate(self, contents: bytes, regions: list[RigRegion] | None = None, preserve_face: bool = False) -> dict:
+
+        if regions is not None or preserve_face:
+            return self.generate_regions(contents, regions or [], preserve_face)
 
         # 캐릭터 이미지 분석
         geometry = character_service.analyze(contents)
 
         # 원본 이미지 읽기
         with Image.open(BytesIO(contents)) as image:
-            rgba = np.array(image.convert("RGBA"))
+            rgba = np.array(ImageOps.exif_transpose(image).convert("RGBA"))
 
         height, width = rgba.shape[:2]
 
@@ -117,6 +121,7 @@ class RigService:
             "right_eye",
             "left_eyebrow",
             "right_eyebrow",
+            "nose",
             "mouth",
         }
 
@@ -238,6 +243,8 @@ class RigService:
                     if part_type.endswith("_eye")
                     else "eyebrow"
                     if part_type.endswith("_eyebrow")
+                    else "nose"
+                    if part_type == "nose"
                     else "mouth"
                 ),
                 "src": filename,
@@ -323,6 +330,158 @@ class RigService:
                 indent=2
             )
 
+        return rig
+
+    def generate_regions(self, contents: bytes, regions: list[RigRegion], preserve_face: bool = False) -> dict:
+        """Extract user-confirmed polygons. Facial details are removed from the
+        underlying image first; structural layers then partition its silhouette."""
+        if (not regions and not preserve_face) or len(regions) > 15 or len({r.id for r in regions}) != len(regions):
+            raise ValueError("한 개 이상의 고유한 파츠 영역을 지정해 주세요.")
+        with Image.open(BytesIO(contents)) as image:
+            rgba = np.array(ImageOps.exif_transpose(image).convert("RGBA"))
+        height, width = rgba.shape[:2]
+        alpha = rgba[:, :, 3]
+        gray = cv2.cvtColor(rgba, cv2.COLOR_RGBA2GRAY)
+        face_ids = {"left_eye", "right_eye", "left_eyebrow", "right_eyebrow", "nose", "mouth"}
+        types = {
+            "left_eye": "eyes", "right_eye": "eyes",
+            "left_eyebrow": "eyebrow", "right_eyebrow": "eyebrow",
+            "left_arm": "arm", "right_arm": "arm", "left_leg": "leg", "right_leg": "leg",
+            "torso": "body",
+        }
+        # Visible small details and overlapping limbs have priority over the
+        # underlying torso. Unassigned pixels remain in the residual body layer.
+        structural_priority = ["hair", "accessory", "left_arm", "right_arm", "left_leg", "right_leg", "tail", "head", "torso"]
+        structural_z = {"tail": 1, "torso": 2, "left_leg": 3, "right_leg": 3, "left_arm": 4, "right_arm": 4, "head": 10, "hair": 20, "accessory": 22}
+        by_id = {r.id: r for r in regions}
+        facial_claimed = np.zeros((height, width), dtype=np.uint8)
+        facial_removal = np.zeros_like(facial_claimed)
+        structural_claimed = np.zeros_like(facial_claimed)
+        structural_masks = {}
+        assets = []
+
+        def polygon_mask(region):
+            mask = np.zeros((height, width), dtype=np.uint8)
+            points = np.array([
+                [round(point.x * (width - 1)), round(point.y * (height - 1))]
+                for point in region.points
+            ], dtype=np.int32)
+            cv2.fillPoly(mask, [points], 255)
+            mask[alpha == 0] = 0
+            if region.id in face_ids and region.mode == "detail":
+                mask[gray > 140] = 0
+            return mask
+
+        def extract(region, source, mask, z):
+            pixels = cv2.findNonZero(mask)
+            if pixels is None:
+                raise ValueError(f"{region.id} 영역에 분리할 픽셀이 없어요. 윤곽을 다시 지정해 주세요.")
+            x, y, w, h = cv2.boundingRect(pixels)
+            crop = source[y:y+h, x:x+w].copy()
+            crop[:, :, 3] = np.minimum(crop[:, :, 3], mask[y:y+h, x:x+w])
+            part = {
+                "id": region.id, "type": types.get(region.id, region.id),
+                "src": f"{region.id}.png", "x": x, "y": y, "width": w, "height": h,
+                "pivotX": float(np.clip((region.pivot.x * (width - 1) - x) / max(1, w), 0, 1)),
+                "pivotY": float(np.clip((region.pivot.y * (height - 1) - y) / max(1, h), 0, 1)),
+                "zIndex": z,
+            }
+            assets.append((part, crop))
+
+        for region in regions:
+            if region.id not in face_ids or preserve_face:
+                continue
+            mask = polygon_mask(region)
+            mask[facial_claimed > 0] = 0
+            extract(region, rgba, mask, 30)
+            facial_claimed = cv2.bitwise_or(facial_claimed, mask)
+            # Exact, hand-confirmed outlines shouldn't erase neighboring
+            # line art. Expand only heuristic dark-feature masks.
+            removal = cv2.dilate(mask, np.ones((3, 3), dtype=np.uint8)) if region.mode == "detail" else mask
+            facial_removal = cv2.bitwise_or(facial_removal, removal)
+
+        restored_rgb = cv2.inpaint(rgba[:, :, :3].copy(), facial_removal, 3, cv2.INPAINT_TELEA) if np.any(facial_removal) else rgba[:, :, :3].copy()
+        restored = np.dstack((restored_rgb, alpha))
+        for part_id in structural_priority:
+            region = by_id.get(part_id)
+            if not region:
+                continue
+            mask = polygon_mask(region)
+            mask[structural_claimed > 0] = 0
+            extract(region, restored, mask, structural_z[part_id])
+            structural_masks[part_id] = mask
+            structural_claimed = cv2.bitwise_or(structural_claimed, mask)
+
+        base = restored.copy()
+        base[:, :, 3][structural_claimed > 0] = 0
+        # Keep a hidden overlap under mobile joints. A strict cut along the
+        # neckline/shoulder previously exposed a transparent slit when a layer
+        # rotated. Limit it to the original silhouette and the joint area,
+        # rather than leaving a second, ghosted copy of the entire moving part.
+        static_mask = np.where(base[:, :, 3] > 0, 255, 0).astype(np.uint8)
+        if "torso" in structural_masks:
+            static_mask = cv2.bitwise_or(static_mask, structural_masks["torso"])
+        if np.any(static_mask):
+            padding = max(2, min(20, round(min(width, height) * .018)))
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2*padding + 1, 2*padding + 1))
+            neighbors = cv2.dilate(static_mask, kernel)
+            support = np.zeros_like(structural_claimed)
+            for part_id in ("head", "left_arm", "right_arm", "left_leg", "right_leg", "tail"):
+                mask = structural_masks.get(part_id)
+                if mask is None:
+                    continue
+                region = by_id[part_id]
+                _, _, part_w, part_h = cv2.boundingRect(mask)
+                radius = max(padding * 3, round(min(part_w, part_h) * .32) + padding)
+                joint = np.zeros_like(support)
+                center = (round(region.pivot.x * (width - 1)), round(region.pivot.y * (height - 1)))
+                cv2.circle(joint, center, radius, 255, -1)
+                bridge = cv2.bitwise_and(cv2.bitwise_and(mask, neighbors), joint)
+                support = cv2.bitwise_or(support, bridge)
+            if np.any(support):
+                # Fill support from neighboring colors to reduce exposed seams
+                # without retaining the moving part's hard contour underneath.
+                filled = cv2.inpaint(restored_rgb, support, 3, cv2.INPAINT_TELEA)
+                base[:, :, :3][support > 0] = filled[support > 0]
+                base[:, :, 3][support > 0] = alpha[support > 0]
+        base_part = {"id": "base", "type": "body", "src": "base.png", "x": 0, "y": 0,
+                     "width": width, "height": height, "pivotX": .5, "pivotY": .5, "zIndex": 0}
+        rig_id = uuid4().hex
+        save_dir = self.output_dir / rig_id
+        save_dir.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(base).save(save_dir / "base.png")
+        for part, crop in assets:
+            Image.fromarray(crop).save(save_dir / part["src"])
+            if part["id"] == "mouth":
+                self.create_mouth_variants(crop, save_dir)
+        rig = {
+            "id": rig_id, "name": "Custom Character", "canvas": {"width": width, "height": height},
+            "partLayoutVersion": 2,
+            "preserveFace": preserve_face,
+            "parts": [base_part] + sorted([part for part, _ in assets], key=lambda p: p["zIndex"]),
+            "expressions": {}, "mouthVariants": {"closed": "mouth_closed.png", "half": "mouth_half.png", "open": "mouth_open.png"} if any(part["id"] == "mouth" for part, _ in assets) else None,
+        }
+        if preserve_face:
+            # Keep every original pixel and the confirmed control regions. The
+            # mesh renderer deforms one continuous texture; no facial cutouts
+            # or inpainted skin are needed. Existing parts remain a fallback.
+            Image.fromarray(rgba).save(save_dir / "mesh.png")
+            rig["mesh"] = {
+                "src": "mesh.png",
+                "regions": [region.model_dump(mode="json") for region in regions],
+            }
+        (save_dir / "rig.json").write_text(json.dumps(rig, ensure_ascii=False, indent=2), encoding="utf-8")
+        return rig
+
+    def generate_with_expressions(self, contents, regions, preserve_face, expressions):
+        rig = self.generate(contents, regions, preserve_face)
+        if expressions:
+            rig["expressionRigs"] = {}
+            for emotion, image, layout in expressions:
+                variant = self.generate_regions(image, layout, preserve_face=True)
+                variant["assetBase"] = f"/generated/{variant['id']}/"
+                rig["expressionRigs"][emotion] = variant
+            (self.output_dir / rig["id"] / "rig.json").write_text(json.dumps(rig, ensure_ascii=False, indent=2), encoding="utf-8")
         return rig
 
 

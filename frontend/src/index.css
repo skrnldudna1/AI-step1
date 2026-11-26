@@ -1,12 +1,14 @@
 :root {
-  --studio-bg: #f5f1eb;
-  --studio-surface: #fffdf9;
-  --studio-border: #e9e1d8;
-  --studio-text: #3c322b;
-  --studio-muted: #817367;
-  --studio-accent: #b46a53;
-  --studio-accent-dark: #914b38;
-  --studio-soft: #f5e8dc;
+  --studio-bg: #ffffff;
+  --studio-surface: #ffffff;
+  --studio-border: #e7e7e9;
+  --studio-text: #252629;
+  --studio-muted: #6b6d73;
+  --studio-accent: #28785b;
+  --studio-accent-dark: #195b43;
+  --studio-soft: #edf6f1;
+  --studio-tint: #f6f6f7;
+  --studio-accent-ring: #28785b33;
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
   color: var(--studio-text);
   background-color: var(--studio-bg);

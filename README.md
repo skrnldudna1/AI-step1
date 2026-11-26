@@ -2,96 +2,30 @@
 
 <img src="./assets/Step1.png" width="100%" alt="Step1" />
 
-<br/>
+### A little closer to being alive.
 
-**A little closer to being alive.**
-
-대화하고, 감정을 표현하고, 일상을 함께하는 AI.
-
-<br/>
-
-![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
-![Electron](https://img.shields.io/badge/Electron-47848F?style=flat-square&logo=electron&logoColor=white)
-![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&logo=opencv&logoColor=white)
+대화하고, 감정을 표현하고, 일상을 함께하는 나만의 AI 동반자.
 
 </div>
 
-<br/>
+## About
 
-## 01 — About
+Step1은 바탕화면에서 함께 생활하는 인터랙티브 AI 캐릭터 프로젝트입니다. 캐릭터의 외형·이름·성격·말투를 직접 설정하고, AI와 대화하며 상황에 어울리는 표정과 움직임을 경험할 수 있습니다.
 
-**Step1** is an interactive AI desktop companion.
+**Tech:** Electron · React · TypeScript · FastAPI · Python · OpenCV
 
-텍스트로 존재하는 AI에게 형체와 개성을 부여하고,
-대화와 감정을 캐릭터의 표정과 움직임으로 표현합니다.
+## Features
 
-내가 만든 캐릭터에게 이름과 성격을 부여하고,
-바탕화면에서 함께 일하고 대화하는 작은 동반자를 만들어갑니다.
+- **데스크톱 캐릭터** — 투명 창, 클릭·더블클릭·드래그, 50–200% 크기 조절
+- **미니 채팅** — 독립 이동, 크기·투명도 조절 및 저장, 스튜디오와 세션 대화 동기화
+- **대화와 감정** — 최근 대화의 맥락과 상황에 맞는 11가지 감정, 행동, 표정 자동 복귀
+- **커스텀 캐릭터** — AI 파츠 분석, 수동 영역·관절 편집, 머리와 팔다리의 메시 리깅
+- **표정 이미지** — 최대 4개 등록, 감정에 따른 부드러운 이미지 전환과 기본 표정 복귀
+- **Companion Studio** — 모찌·루나·포미 또는 직접 만든 캐릭터, 개별 프로필 및 감정 테스트
 
-> 현재는 규칙 기반 Mock AI를 사용하여 비용 없이 캐릭터와 감정 시스템을 테스트할 수 있습니다. 실제 언어 모델 연동은 다음 개발 단계입니다.
+## Getting Started (macOS)
 
-<br/>
-
-## 02 — Features
-
-| Feature | Description |
-| :--- | :--- |
-| Conversation | 메인 스튜디오와 독립형 미니 채팅창의 대화 기록 공유 (실행 세션 내) |
-| Personality | 네 가지 캐릭터별 이름, 성격 및 말투 설정 · 저장 및 재실행 복원 |
-| Emotion System | 기본, 기쁨, 신남, 슬픔, 부끄러움, 화남, 당황, 졸림, 놀람, 장난기, 애정 |
-| Animation | 눈 깜빡임, 입 움직임, 표정, 감정별 움직임 및 차분한 생각하기 모션 |
-| Desktop Companion | 투명한 바탕화면 캐릭터, 클릭·드래그, 50–200% 크기 조절 |
-| Mini Chat | 캐릭터와 함께 이동하거나 자유롭게 분리해서 이동 · 위치 기억 |
-| Auto Rigging | 업로드한 이미지의 얼굴 파츠를 검출하고 움직이는 캐릭터 생성 |
-| Companion Studio | 캐릭터 미리보기, 프로필 편집, 11가지 감정 테스트 및 커스텀 제작 |
-
-### Meet the companions
-
-| 캐릭터 | 기본 프로필 | 표현 방식 |
-| :--- | :--- | :--- |
-| 모찌 · Basic | 다정한 친구 | 벡터 기반 눈, 입, 눈썹 및 표정 효과 |
-| 루나 · Illustration | 차분한 친구 | 감정별 일러스트 이미지 |
-| 포미 · Pomeranian | 장난꾸러기 | 분리된 눈·코·입·꼬리 파츠와 애니메이션 |
-| 내 친구 · Custom | 사용자 설정 | 업로드 이미지에서 검출한 얼굴 파츠의 자동 리깅 |
-
-각 캐릭터의 이름·성격·말투는 직접 변경할 수 있습니다.
-
-<br/>
-
-## 03 — How it works
-
-```mermaid
-flowchart LR
-    A[Main Studio] --> C[Shared Chat Session]
-    B[Mini Chat] --> C
-    P[Character Profile] --> C
-    C --> D[FastAPI / Mock AI]
-    D --> E[Reply + Emotion + Action + Intensity]
-    E --> C
-    E --> F[Desktop Character]
-```
-
-### Automatic Character Rigging
-
-정적인 이미지에 움직임을 부여합니다.
-
-```mermaid
-flowchart TD
-    A[Image Upload] --> B[Feature Detection]
-    B --> C[Part Extraction]
-    C --> D[Image Restoration]
-    D --> E[Rig Generation]
-    E --> F[Animation]
-```
-
-<br/>
-
-## 04 — Getting Started
-
-macOS 기준입니다. Python 3.13과 Node.js가 필요합니다. 아래 예시는 저장소를 `~/Desktop/Step1`에 내려받은 경우이며, 다른 위치에 저장했다면 해당 경로로 변경해 주세요.
+Python 3.13, Node.js 20.19+ 또는 22.12+가 필요합니다. 저장소를 `~/Desktop/Step1`에 내려받은 경우를 기준으로 설명합니다.
 
 ### 1. Backend
 
@@ -103,14 +37,11 @@ python -m pip install fastapi "uvicorn[standard]" python-multipart pillow numpy 
 uvicorn main:app --reload --reload-dir app
 ```
 
-서버 상태: [http://127.0.0.1:8000/api/health](http://127.0.0.1:8000/api/health)
-
-가상환경을 프로젝트 외부에 만드는 이유는 iCloud의 파일 최적화로 Python 라이브러리 로딩이 지연되는 문제를 방지하기 위함입니다.
-가상환경 생성과 라이브러리 설치는 최초 한 번만 하면 됩니다.
+가상환경 생성과 라이브러리 설치는 최초 한 번만 실행합니다. 서버 상태: [API Health](http://127.0.0.1:8000/api/health)
 
 ### 2. Frontend
 
-별도의 터미널에서 실행합니다.
+새 터미널을 열어 실행합니다.
 
 ```bash
 cd ~/Desktop/Step1/frontend
@@ -118,65 +49,56 @@ npm ci
 npm run dev
 ```
 
-웹 미리보기: [http://localhost:5173](http://localhost:5173)
-
 ### 3. Desktop App
 
-프론트엔드 개발 서버가 실행 중인 상태에서 또 다른 터미널을 열고 실행합니다.
+프론트엔드 서버를 실행한 상태에서 새로운 터미널을 엽니다.
 
 ```bash
 cd ~/Desktop/Step1/frontend
 npm run electron
 ```
 
-캐릭터를 클릭하면 미니 채팅이 열립니다. 헤더를 드래그하면 채팅창을 독립적으로 움직일 수 있고, 연결 버튼으로 다시 캐릭터 옆에 붙일 수 있습니다.
+캐릭터 클릭은 미니 채팅, 더블클릭은 설정창 열기·닫기입니다.
 
-### Tests
+## AI Connection
+
+| 방식 | 설명 |
+| :--- | :--- |
+| Mock | 무료 테스트 모드 (기본값, 제한적인 상황 반응) |
+| ChatGPT | 앱의 **Continue with ChatGPT** 버튼으로 지원되는 계정 연동 |
+| OpenAI API | `backend/.env.example` 참고, `backend/.env`에 API 키 저장 후 `STEP1_AI_PROVIDER=openai uvicorn main:app --reload --reload-dir app` 실행 |
+
+ChatGPT 계정 연동은 [공식 로컬 앱 로그인 방식](https://developers.openai.com/siwc/token-sharing-open-source)을 사용하며 계정 지원 여부와 사용 한도에 따릅니다. OpenAI API는 별도 사용료가 발생할 수 있습니다.
+
+> 실제 AI 모드에서는 현재 Step1 대화 문맥을 전송합니다. ChatGPT 기존 기록·기억은 가져오지 않으며, 계정 로그인 정보는 OS 암호화 저장소에 저장합니다.
+
+## Custom Character
+
+1. 대표 이미지를 등록합니다. 투명 PNG를 권장합니다.
+2. 필요하면 AI 분석 또는 수동 편집으로 움직일 영역을 지정합니다.
+3. 다른 표정의 이미지를 최대 4장 추가하고 각각 감정을 지정합니다.
+4. 캐릭터를 생성한 후 감정 버튼으로 테스트합니다.
+
+등록한 표정 그림은 대표 그림과 약 260ms 동안 부드럽게 전환됩니다. 표정이 끝나면 기본 그림으로 돌아오며, 표정별 이미지 없이도 메시 리깅으로 기본 감정을 표현할 수 있습니다.
+
+## Development
 
 ```bash
+# frontend
 cd ~/Desktop/Step1/frontend
 npm test
 npm run build
 
+# backend
 cd ~/Desktop/Step1/backend
 source ~/.venvs/step1/bin/activate
-python -m unittest discover -s tests -v
+STEP1_AI_PROVIDER=mock python -m unittest discover -s tests -v
 ```
 
-<br/>
+현재 단계 **STEP 21-3** · [개발 로드맵](./ROADMAP.md)
 
-## 05 — Development
-
-| Module | Status |
-| :--- | :--- |
-| STEP 15–16 · Desktop Scaling & Hit Testing | Implemented |
-| STEP 17 · Independent Mini Chat | Implemented |
-| STEP 18 · Companion Studio UI | Implemented |
-| STEP 19 · Character Personality | Implemented |
-| STEP 19-2 · Extended Expressions (11 Emotions) | Implemented |
-| STEP 20 · LLM Integration | Next |
-| STEP 21 · Long-term Memory & Conversation History | Planned |
-| STEP 22 · Proactive Interaction | Planned |
-| STEP 23 · Voice Interaction | Planned |
-
-[View Development Roadmap](./ROADMAP.md)
-
-<br/>
-
-> Automatic rigging is experimental and uses rule-based computer vision.
-> 얼굴 파츠 검출 결과에 따라 커스텀 캐릭터의 표정 표현 품질이 달라질 수 있습니다.
-> 장기 기억, 실제 LLM 및 음성 대화 기능은 아직 구현되지 않았습니다.
-
-<br/>
+자동 리깅의 품질은 이미지와 지정 영역에 따라 달라질 수 있습니다. 장기 기억·대화 영구 저장·음성 대화는 추후 구현 예정입니다.
 
 ---
 
-<div align="center">
-
-<sub>STEP1 — AI COMPANION PROJECT</sub>
-
-<br/>
-
-*Making AI feel more alive.*
-
-</div>
+<div align="center"><sub>STEP1 — AI COMPANION PROJECT</sub></div>

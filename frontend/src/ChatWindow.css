@@ -7,122 +7,84 @@ body:has(.mini-chat-window) #root {
   min-height: 0;
   margin: 0;
   overflow: hidden;
-  background: var(--studio-bg);
+  /* Keep the document transparent so the entire panel, including text,
+     composites directly over the real desktop as one layer. */
+  background: transparent !important;
 }
 
 .mini-chat-window {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 13px;
-  gap: 10px;
+  padding: 11px 13px 13px;
+  gap: 0;
   color: var(--studio-text);
+  background: var(--studio-bg);
+  border: 1px solid var(--studio-border);
+  opacity: var(--mini-chat-alpha, 1);
+  border-radius: 17px;
+  overflow: hidden;
 }
 
 .mini-chat-header {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.mini-chat-brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-  flex: 1;
+  gap: 7px;
+  min-height: 30px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--studio-border);
 }
 
 .mini-chat-drag-handle {
+  display: flex;
+  flex: 1;
+  min-width: 24px;
+  align-items: center;
+  height: 25px;
   cursor: grab;
   user-select: none;
   touch-action: none;
   -webkit-app-region: no-drag;
 }
+.mini-chat-drag-handle::before { content: ""; width: 23px; height: 3px; border-radius: 9px; background: #d9dadd; margin-left: 3px; }
+.mini-chat-drag-handle:hover::before { background: var(--studio-muted); }
 
 .mini-chat-drag-handle.is-dragging {
   cursor: grabbing;
 }
 
-.mini-chat-follow[aria-pressed="true"] {
-  background: var(--studio-soft);
-  border-color: #d6b3a1;
-  color: var(--studio-accent-dark);
-}
-
-.mini-chat-brand h1 {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mini-chat-brand > div {
-  min-width: 0;
-}
-
-.mini-chat-avatar {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 13px;
-  background: var(--studio-accent);
-  color: #fff8ed;
-  flex: 0 0 auto;
-}
-
-.mini-chat-header h1 {
-  font-size: 15px;
-  line-height: 1.2;
-  margin: 0 0 4px;
-  letter-spacing: -.045em;
-}
-.mini-chat-header h1 span { color: var(--studio-accent); }
-
-.mini-chat-header p {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #776b63;
-  font-size: 11px;
-  margin: 0;
-}
-
-.mini-chat-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #b47e5f;
-}
-.mini-chat-window[data-follow="false"] .mini-chat-indicator { background: #78996c; }
+.mini-opacity-inline { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; color: var(--studio-muted); }
+.mini-opacity-inline input { width: 68px; height: 24px; margin: 0; appearance: none; background: transparent; cursor: pointer; }
+.mini-opacity-inline input::-webkit-slider-runnable-track { height: 3px; border-radius: 4px; background: #dedfe1; }
+.mini-opacity-inline input::-webkit-slider-thumb { appearance: none; width: 10px; height: 10px; border-radius: 50%; background: var(--studio-accent); margin-top: -3.5px; }
 
 .mini-chat-actions {
   display: flex;
-  gap: 5px;
+  gap: 2px;
   flex: 0 0 auto;
 }
 
 .mini-chat-actions button {
   display: grid;
   place-items: center;
-  width: 31px;
-  height: 31px;
+  width: 25px;
+  height: 25px;
   padding: 0;
-  border: 1px solid var(--studio-border);
-  border-radius: 10px;
-  background: var(--studio-surface);
-  color: #785d4c;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--studio-muted);
   cursor: pointer;
   font: inherit;
   font-size: 18px;
 }
 
-.mini-chat-actions button:hover {
-  background: var(--studio-soft);
-}
+.mini-chat-actions button:hover:not(:disabled) { background: var(--studio-tint); color: var(--studio-text); }
+.mini-chat-actions .mini-chat-follow[aria-pressed="true"] { color: var(--studio-accent); }
+.mini-chat-actions .mini-chat-clear:hover:not(:disabled) { background: #fff1ee; color: #ad5143; }
 
 .mini-chat-window .chat-container {
   flex: 1;
@@ -131,12 +93,14 @@ body:has(.mini-chat-window) #root {
   max-width: none;
   height: auto;
   margin: 0;
-  border-radius: 14px;
+  border-radius: 0;
+  background: var(--studio-surface);
+  border: 0;
 }
 
 .mini-chat-window .chat-messages {
-  padding: 12px;
-  gap: 9px;
+  padding: 12px 2px 10px;
+  gap: 10px;
 }
 
 .mini-chat-window .chat-message {
@@ -145,30 +109,32 @@ body:has(.mini-chat-window) #root {
   font-size: 13px;
   white-space: pre-wrap;
 }
+.mini-chat-window .chat-message.assistant { background: #f5f5f6; border-color: #efeff0; }
+.mini-chat-window .chat-message.user { background: #edf2ef; border-color: #e5ebe7; border-right-color: var(--studio-accent); }
+.mini-chat-window .chat-bubble-group, .mini-chat-window .chat-row.user .chat-bubble-group { max-width: 93%; }
+.mini-chat-window .chat-thinking { min-height: 31px; padding: 11px 14px; }
 
 .mini-chat-window .chat-input-area {
-  padding: 9px;
+  padding: 7px 0 0;
   gap: 6px;
 }
 
 .mini-chat-window .chat-input-area input {
-  padding: 9px;
+  padding: 8px 10px;
   font-size: 12px;
 }
 
 .mini-chat-window .chat-input-area button {
-  padding: 9px 12px;
+  padding: 0;
+  width: 36px;
   font-size: 12px;
 }
-.mini-chat-window .chat-avatar { width: 26px; height: 26px; flex-basis: 26px; border-radius: 8px; }
-.mini-chat-window .chat-avatar svg { width: 15px; height: 15px; }
-.mini-chat-window .chat-bubble-group { max-width: calc(100% - 34px); }
 .mini-chat-window .chat-input-area input,
 .mini-chat-window .chat-input-area button { min-height: 36px; }
 
 .mini-chat-window button:focus-visible,
 .mini-chat-window input:focus-visible {
-  outline: 2px solid #a87c70;
+  outline: 2px solid var(--studio-accent);
   outline-offset: 2px;
 }
 
@@ -176,3 +142,30 @@ body:has(.mini-chat-window) #root {
   opacity: .5;
   cursor: default;
 }
+.mini-chat-actions button:focus-visible, .mini-opacity-inline input:focus-visible { outline-offset: -2px; }
+.mini-chat-window .chat-clear-dialog[open] { opacity: var(--mini-chat-alpha, 1); }
+.mini-chat-window .chat-plan-status { padding: 1px 2px 4px; border-top: 0; font-size: 10px; }
+.mini-chat-window .chat-plan-status button { padding: 0 2px; font-size: 10px; }
+
+/* Real window-resize hit areas. They stay inside the 13px padding, so
+   the input, tabs, and drag-to-move header remain usable. */
+.mini-resize-handle { position: absolute; z-index: 5; touch-action: none; user-select: none; -webkit-app-region: no-drag; }
+.mini-resize-n, .mini-resize-s { height: 7px; left: 14px; right: 14px; cursor: ns-resize; }
+.mini-resize-n { top: 0; }
+.mini-resize-s { bottom: 0; }
+.mini-resize-e, .mini-resize-w { width: 7px; top: 14px; bottom: 14px; cursor: ew-resize; }
+.mini-resize-e { right: 0; }
+.mini-resize-w { left: 0; }
+.mini-resize-ne, .mini-resize-nw, .mini-resize-se, .mini-resize-sw { width: 15px; height: 15px; }
+.mini-resize-ne { top: 0; right: 0; cursor: nesw-resize; }
+.mini-resize-nw { top: 0; left: 0; cursor: nwse-resize; }
+.mini-resize-se { bottom: 0; right: 0; cursor: nwse-resize; }
+.mini-resize-sw { bottom: 0; left: 0; cursor: nesw-resize; }
+.mini-resize-se::after { content: ""; position: absolute; right: 3px; bottom: 3px; width: 9px; height: 9px; border-radius: 2px; background: repeating-linear-gradient(135deg, transparent 0 3px, #a6aaad 3px 4px); clip-path: polygon(100% 0, 100% 100%, 0 100%); pointer-events: none; }
+.mini-resize-se:hover::after, .mini-resize-se:focus-visible::after { background: repeating-linear-gradient(135deg, transparent 0 3px, var(--studio-accent) 3px 4px); }
+.mini-resize-se:focus-visible { outline: 2px solid var(--studio-accent); outline-offset: -2px; }
+.mini-chat-window[data-resizing] { user-select: none; }
+.mini-chat-window[data-resizing="n"], .mini-chat-window[data-resizing="s"] { cursor: ns-resize; }
+.mini-chat-window[data-resizing="e"], .mini-chat-window[data-resizing="w"] { cursor: ew-resize; }
+.mini-chat-window[data-resizing="ne"], .mini-chat-window[data-resizing="sw"] { cursor: nesw-resize; }
+.mini-chat-window[data-resizing="nw"], .mini-chat-window[data-resizing="se"] { cursor: nwse-resize; }

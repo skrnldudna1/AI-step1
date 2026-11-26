@@ -4,8 +4,9 @@ import type {
   CharacterReaction,
 } from './character';
 
-import type { CharacterRig } from './rig';
-import type { ChatState } from './chat';
+import type { CharacterRig, RigRegion } from './rig';
+import type { ChatState, ChatResizeEdge } from './chat';
+import type { AIConnectionState } from './aiConnection';
 import type { CharacterProfile, PersonaState } from '../persona';
 
 interface ReactionState {
@@ -25,12 +26,31 @@ interface Step1API {
   setCharacterProfile: (type: CharacterType, profile: CharacterProfile) => Promise<boolean>;
   onPersonaChanged: (callback: (state: PersonaState) => void) => () => void;
   getChatFollow: () => Promise<boolean | null>;
+  getChatOpacity: () => Promise<number | null>;
+  setChatOpacity: (opacity: number) => void;
+  onChatOpacityChanged: (callback: (opacity: number) => void) => () => void;
   setChatFollow: (follow: boolean) => void;
   onChatFollowChanged: (callback: (follow: boolean) => void) => () => void;
   moveChatWindow: (position: { dx: number; dy: number }) => void;
   finishChatMove: () => void;
+  startChatResize: (edge: ChatResizeEdge, id: number) => void;
+  resizeChatWindow: (payload: { id: number; dx: number; dy: number }) => void;
+  finishChatResize: (id: number) => void;
   getChatState: () => Promise<ChatState | null>;
   submitChatMessage: (message: string) => Promise<boolean>;
+  clearChat: () => Promise<boolean>;
+  getAIConnection: () => Promise<AIConnectionState | null>;
+  signInChatGPT: (id?: string | null) => Promise<AIConnectionState | null>;
+  cancelAIConnection: () => Promise<AIConnectionState | null>;
+  selectChatGPTAccount: (id: string) => Promise<AIConnectionState | null>;
+  useBackendAI: () => Promise<AIConnectionState | null>;
+  signOutChatGPT: () => Promise<AIConnectionState | null>;
+  selectChatGPTModel: (id: string) => Promise<AIConnectionState | null>;
+  refreshChatGPTModels: () => Promise<AIConnectionState | null>;
+  dismissChatGPTWelcome: () => Promise<AIConnectionState | null>;
+  openChatGPTUsage: () => void;
+  analyzeRigImages: (images: string[]) => Promise<{ ok: true; regions: RigRegion[] } | { ok: false; error: string }>;
+  onAIConnectionChanged: (callback: (state: AIConnectionState) => void) => () => void;
   onChatStateChanged: (callback: (state: ChatState) => void) => () => void;
 
   // 데스크톱 캐릭터 이동

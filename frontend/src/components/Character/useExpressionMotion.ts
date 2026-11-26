@@ -7,9 +7,10 @@ export function useExpressionMotion(reaction: CharacterReaction, reactionId: num
   useEffect(() => {
     const element = ref.current;
     if (!element || reactionId === 0 || isThinking) return;
-    element.style.animation = 'none';
+    const layers = [element, ...element.querySelectorAll<HTMLElement>('.companion-head-layer, .rig-part-arm, .rig-part-leg')];
+    layers.forEach(layer => { layer.style.animation = 'none'; });
     void element.offsetWidth;
-    element.style.animation = '';
+    layers.forEach(layer => { layer.style.animation = ''; });
   }, [reactionId, isThinking]);
   const intensity = Math.min(1, Math.max(0, reaction.intensity));
   const style = { '--bounce-height': `-${5 + intensity * 25}px` } as CSSProperties;

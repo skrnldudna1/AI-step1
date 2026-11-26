@@ -1,7 +1,7 @@
 import type { SVGProps } from 'react';
 
 type IconName = 'paw' | 'home' | 'palette' | 'sparkles' | 'chat' | 'smile' |
-  'arrow' | 'external' | 'pin' | 'link' | 'settings' | 'close' | 'upload' | 'reset';
+  'arrow' | 'external' | 'pin' | 'link' | 'settings' | 'close' | 'upload' | 'reset' | 'opacity' | 'trash';
 
 interface Props extends SVGProps<SVGSVGElement> {
   name: IconName;
@@ -32,6 +32,8 @@ export default function StudioIcon({ name, ...props }: Props) {
     case 'close': content = <path d="m6 6 12 12M18 6 6 18"/>; break;
     case 'upload': content = <><path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/></>; break;
     case 'reset': content = <><path d="M3 10a9 9 0 1 1 2 7M3 4v6h6"/></>; break;
+    case 'opacity': content = <><path d="M12 3C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-12Z"/><path d="M5 15h14M9 18h6"/></>; break;
+    case 'trash': content = <><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></>; break;
   }
   return <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{content}</svg>;
 }

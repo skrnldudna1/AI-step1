@@ -1,13 +1,19 @@
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from main import app
+from app.providers.mock import MockAIProvider
+from app.services.ai_service import AIService
 
 
 class PersonaTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        mock_service = patch("main.ai_service", AIService(MockAIProvider()))
+        mock_service.start()
+        self.addCleanup(mock_service.stop)
 
     def chat(self, message, profile=None):
         payload = {"message": message}

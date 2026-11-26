@@ -1,3 +1,5 @@
+import { pointInPolygon } from './headRig';
+import type { ClipPolygon } from './headRig';
 // Hit-test the visible character pixels, not its rectangular window.
 type Point = { x: number; y: number };
 type AlphaMask = { width: number; height: number; alpha: Uint8Array };
@@ -113,6 +115,12 @@ function imagePixelHit(image: HTMLImageElement, point: Point): boolean {
   if (!image.complete || !image.naturalWidth || !image.naturalHeight) return false;
   const local = localCharacterPoint(image, point);
   if (!local) return false;
+  if (image.dataset.hitPolygon) {
+    try {
+      const polygon = JSON.parse(image.dataset.hitPolygon) as ClipPolygon;
+      if (!pointInPolygon(local.x / local.width * 100, local.y / local.height * 100, polygon)) return false;
+    } catch { return false; }
+  }
   let { x, y, width, height } = local;
   // Pomeranian and illustration use object-fit: contain; rig parts use fill.
   const objectFit = getComputedStyle(image).objectFit;
@@ -139,7 +147,22 @@ function imagePixelHit(image: HTMLImageElement, point: Point): boolean {
   return mask.alpha[row * mask.width + column] * local.opacity >= ALPHA_THRESHOLD;
 }
 
+function meshPixelHit(mesh: HTMLCanvasElement, point: Point): boolean {
+    const local = localCharacterPoint(mesh, point);
+    if (!local) return false;
+    const gl = mesh.getContext('webgl');
+    if (!gl || gl.isContextLost()) return false;
+    const pixel = new Uint8Array(4);
+    const x = Math.min(mesh.width - 1, Math.floor(local.x / local.width * mesh.width));
+    const y = Math.min(mesh.height - 1, Math.floor(local.y / local.height * mesh.height));
+    gl.readPixels(x, mesh.height - 1 - y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    return pixel[3] * local.opacity >= ALPHA_THRESHOLD;
+}
+
 export function isCharacterPixel(root: HTMLElement, point: Point): boolean {
+  // Both outgoing and incoming artwork may be visible during a crossfade.
+  // Invisible layers are rejected by localCharacterPoint's opacity check.
+  if (Array.from(root.querySelectorAll<HTMLCanvasElement>('canvas[data-mesh-active="true"]')).some(mesh => meshPixelHit(mesh, point))) return true;
   const face = root.querySelector<HTMLElement>('.character-face');
   if (face) {
     const local = localCharacterPoint(face, point);

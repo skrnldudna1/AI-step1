@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 from itertools import combinations
 
@@ -11,7 +11,7 @@ class CharacterService:
     def analyze(self, contents: bytes) -> dict:
 
         with Image.open(BytesIO(contents)) as image:
-            rgba = np.array(image.convert("RGBA"))
+            rgba = np.array(ImageOps.exif_transpose(image).convert("RGBA"))
 
         height, width = rgba.shape[:2]
 
@@ -327,12 +327,20 @@ class CharacterService:
                 )
 
         if mouth_candidates:
-            mouth = min(
+            # The lowest centered feature is generally the mouth; a smaller
+            # centered feature in between the eyes and the mouth may be a nose.
+            mouth = max(
                 mouth_candidates,
-                key=lambda item: item[0]
+                key=lambda item: item[1]["center"]["y"] - abs(item[1]["center"]["x"] - eye_center_x) * .4
             )[1]
 
             mouth["type"] = "mouth"
+            nose_candidates = [
+                feature for _, feature in mouth_candidates
+                if feature is not mouth and feature["center"]["y"] < mouth["center"]["y"]
+            ]
+            if nose_candidates:
+                min(nose_candidates, key=lambda f: abs(f["center"]["x"] - eye_center_x))["type"] = "nose"
 
         return features
 

@@ -203,7 +203,7 @@
 }
 
 .legend-center {
-  color: #4285f4;
+  color: var(--studio-accent);
 }
 /* 캐릭터 생성 버튼 */
 
@@ -215,7 +215,7 @@
   border: none;
   border-radius: 10px;
 
-  background: #6879d0;
+  background: var(--studio-accent);
   color: white;
 
   font-size: 14px;
@@ -226,7 +226,7 @@
 }
 
 .generate-button:hover {
-  background: #5667bc;
+  background: var(--studio-accent-dark);
 }
 
 .generate-button:disabled {
@@ -300,3 +300,70 @@
 .workshop-card .upload-reset { border-color: var(--studio-border); color: var(--studio-muted); }
 .workshop-card .upload-filename, .workshop-card .upload-error { text-align: center; }
 .workshop-card .analysis-result { background: #f2f4ed; border-color: #dce4d6; }
+.workshop-card .upload-area { background: var(--studio-tint); border-color: #d1d2d5; }
+.workshop-card .upload-area:hover { background: white; border-color: var(--studio-accent); }
+.workshop-card .upload-symbol { background: var(--studio-soft); }
+.workshop-card .upload-placeholder p { color: var(--studio-text); }
+.workshop-card .analysis-result, .workshop-card .rig-preview { background: var(--studio-tint); border-color: var(--studio-border); color: var(--studio-text); }
+
+.rig-reference-section { margin: 18px 0 14px; }
+.rig-reference-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 9px; font-size: 13px; color: var(--studio-text); }
+.rig-reference-heading small { display: block; color: var(--studio-muted); font-size: 11px; margin-top: 4px; }
+.rig-reference-heading > span { color: var(--studio-accent); font-size: 11px; }
+.rig-reference-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; max-width: 520px; }
+.rig-reference-thumb, .rig-reference-add { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 90px; min-width: 0; border: 1px solid var(--studio-border); border-radius: 10px; background: var(--studio-tint); overflow: hidden; }
+.rig-reference-thumb img { width: 100%; height: 65px; object-fit: contain; }
+.rig-reference-thumb > span { max-width: 95%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; color: var(--studio-muted); padding: 3px; }
+.rig-reference-thumb button { position: absolute; right: 4px; top: 4px; padding: 3px; width: 21px; height: 21px; display: grid; place-items: center; border: 1px solid var(--studio-border); background: white; border-radius: 6px; color: var(--studio-muted); cursor: pointer; }
+.rig-reference-add { border-style: dashed; color: var(--studio-accent); gap: 5px; cursor: pointer; font-size: 11px; }
+.rig-reference-add:hover { border-color: var(--studio-accent); }
+.rig-reference-add input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.rig-reference-add:focus-within { outline: 2px solid var(--studio-accent); }
+.rig-help, .rig-notice { font-size: 12px; color: var(--studio-muted); line-height: 1.65; margin: 12px 0; }
+.rig-notice { padding: 11px 12px; background: var(--studio-soft); border-radius: 10px; color: var(--studio-accent-dark); }
+.workshop-card .rig-vision-button { background: white; color: var(--studio-accent); border: 1px solid var(--studio-accent); }
+.workshop-card .rig-vision-button:hover:not(:disabled) { background: var(--studio-soft); color: var(--studio-accent-dark); }
+.workshop-card .rig-vision-button:disabled { opacity: .45; cursor: not-allowed; }
+.rig-region-editor { border: 1px solid var(--studio-border); border-radius: 15px; padding: 16px; margin-top: 15px; background: white; }
+.rig-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rig-editor-heading h3 { margin: 0 0 4px; font-size: 17px; }
+.rig-editor-heading p { margin: 0; color: var(--studio-muted); font-size: 12px; line-height: 1.6; }
+.rig-editor-heading > span { color: var(--studio-accent); background: var(--studio-soft); padding: 5px 8px; border-radius: 8px; font-size: 11px; white-space: nowrap; }
+.rig-editor-toolbar, .rig-editor-drawing, .rig-editor-footer, .rig-editor-parts { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; margin: 12px 0; font-size: 12px; color: var(--studio-muted); }
+.rig-editor-toolbar label { display: flex; align-items: center; gap: 6px; }
+.rig-editor-toolbar select { max-width: 145px; color: var(--studio-text); font: inherit; border: 1px solid var(--studio-border); border-radius: 8px; background: white; padding: 7px; }
+.rig-editor-toolbar button, .rig-editor-drawing button, .rig-editor-parts button { color: var(--studio-text); font: inherit; background: white; padding: 7px 9px; border: 1px solid var(--studio-border); border-radius: 8px; cursor: pointer; }
+.rig-editor-toolbar button[aria-pressed="true"], .rig-editor-parts button[aria-pressed="true"] { border-color: var(--studio-accent); color: var(--studio-accent-dark); background: var(--studio-soft); }
+.rig-editor-toolbar button:disabled, .rig-editor-drawing button:disabled, .rig-editor-parts button:disabled { opacity: .5; cursor: not-allowed; }
+.rig-editor-drawing { background: var(--studio-tint); padding: 10px; border-radius: 8px; line-height: 1.5; }
+.rig-editor-drawing > span { flex: 1; min-width: 120px; }
+.rig-editor-stage { display: flex; justify-content: center; padding: 12px; background: repeating-conic-gradient(#ededee 0% 25%, #f9f9fa 0% 50%) 0 0 / 18px 18px; border: 1px solid var(--studio-border); border-radius: 10px; overflow: hidden; }
+.rig-editor-stage svg { display: block; max-width: 100%; height: auto; touch-action: none; user-select: none; overflow: visible; }
+.rig-editor-stage svg.drawing { cursor: crosshair; }
+.rig-region-shape { fill: #28785b12; stroke: #28785b91; stroke-width: 1.2px; vector-effect: non-scaling-stroke; cursor: move; }
+.rig-region-shape.selected { fill: #28785b25; stroke: #28785b; stroke-width: 2px; }
+.rig-region-vertex { fill: white; stroke: #28785b; stroke-width: 1.5px; vector-effect: non-scaling-stroke; cursor: grab; }
+.rig-region-pivot { fill: #ec9c48; stroke: white; stroke-width: 1.8px; vector-effect: non-scaling-stroke; cursor: grab; }
+.rig-region-draft { stroke: #28785b; stroke-width: 2px; vector-effect: non-scaling-stroke; fill: none; stroke-dasharray: 5 3; }
+.rig-editor-footer { justify-content: space-between; margin-bottom: 0; }
+.rig-editor-footer label { display: flex; align-items: center; gap: 5px; }
+.rig-editor-footer input { accent-color: var(--studio-accent); }
+.rig-generation-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 14px; }
+.rig-generation-actions .generate-button { margin: 0; width: auto; padding: 11px 15px; }
+@media (max-width: 480px) { .rig-region-editor { padding: 12px; } .rig-editor-toolbar { gap: 5px; } .rig-editor-stage { padding: 6px; } }
+
+.rig-preserve-option { display: flex; gap: 9px; padding: 13px; border: 1px solid var(--studio-border); border-radius: 11px; background: var(--studio-tint); align-items: flex-start; }
+.rig-preserve-option input { accent-color: var(--studio-accent); margin-top: 2px; }
+.rig-preserve-option strong { display: block; font-size: 13px; color: var(--studio-text); }
+.rig-preserve-option small { display: block; margin-top: 4px; color: var(--studio-muted); font-size: 11px; line-height: 1.55; }
+.rig-reference-grid { grid-template-columns: repeat(auto-fill,minmax(132px,1fr)); max-width: none; }
+.rig-reference-card { min-width: 0; border: 1px solid var(--studio-border); border-radius: 11px; overflow: hidden; padding: 5px; display: grid; gap: 5px; background: white; }
+.rig-reference-card.selected { border-color: var(--studio-accent); }
+.rig-reference-card .rig-reference-thumb { border: 0; height: 90px; }
+.rig-reference-card select, .rig-reference-edit { width: 100%; min-width: 0; border-radius: 7px; border: 1px solid var(--studio-border); color: var(--studio-text); background: white; font: inherit; font-size: 11px; padding: 6px; }
+.rig-reference-edit { color: var(--studio-accent-dark); cursor: pointer; }
+.rig-reference-edit[aria-pressed="true"] { background: var(--studio-soft); border-color: var(--studio-accent); }
+.rig-reference-add { height: 158px; }
+.rig-target-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 14px 0; color: var(--studio-muted); font-size: 12px; }
+.rig-target-bar button { background: white; color: var(--studio-accent-dark); border: 1px solid var(--studio-border); border-radius: 8px; padding: 8px 10px; font: inherit; cursor: pointer; }
+.rig-target-bar button[aria-pressed="true"] { border-color: var(--studio-accent); background: var(--studio-soft); }

@@ -24,6 +24,12 @@ Action = Literal[
     "bounce",
 ]
 
+ConversationSituation = Literal[
+    "casual", "explaining", "empathizing", "reassuring", "celebrating",
+    "playing", "affection", "surprised", "clarifying", "apologizing",
+    "serious", "winding_down",
+]
+
 
 class CharacterReaction(BaseModel):
     emotion: Emotion = "neutral"
@@ -38,6 +44,12 @@ class CharacterReaction(BaseModel):
 class AIResponse(BaseModel):
     reply: str
     reaction: CharacterReaction
+    situation: ConversationSituation | None = None
+
+
+class ChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
 
 
 class CharacterProfile(BaseModel):

@@ -7,9 +7,13 @@ import Character from './components/Character/Character';
 import PomeranianCharacter from './components/Character/PomeranianCharacter';
 import RiggedCharacter from './components/Character/RiggedCharacter';
 import CharacterSizeControl from './components/Character/CharacterSizeControl';
+import RigHeadControl from './components/Character/RigHeadControl';
+import { getRigHeadPlan } from './headRig';
 
 import ReactionControls from './components/ReactionControls/ReactionControls';
 import Chat from './components/Chat/Chat';
+import AIConnectionPanel from './components/Chat/AIConnectionPanel';
+import useAIConnection from './hooks/useAIConnection';
 import StudioIcon from './components/StudioIcon';
 import PersonaEditor from './components/PersonaEditor/PersonaEditor';
 import usePersonaState from './hooks/usePersonaState';
@@ -112,6 +116,8 @@ function loadCharacterSize(): number {
 // ========================================
 
 function App() {
+  const aiConnection = useAIConnection();
+  const [tab, setTab] = useState<'character' | 'profile' | 'chat'>('character');
   // ========================================
   // 1. 캐릭터 감정 상태
   // ========================================
@@ -133,6 +139,7 @@ function App() {
     '서버 연결 확인 중...'
   );
   const [serverConnection, setServerConnection] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [aiModeLabel, setAiModeLabel] = useState('');
   const [serverRetry, setServerRetry] = useState(0);
 
   // ========================================
@@ -142,6 +149,7 @@ function App() {
   const [customRig, setCustomRig] = useState<CharacterRig | null>(
     loadCustomRig
   );
+  const [showHeadGuide, setShowHeadGuide] = useState(false);
 
   const [characterType, setCharacterType] = useState<CharacterType>(() => {
     try {
@@ -275,6 +283,14 @@ function App() {
     }
   };
 
+  const updateHeadSplit = (value: number | undefined) => {
+    if (!customRig) return;
+    const next = { ...customRig, headSplit: value };
+    setCustomRig(next);
+    try { localStorage.setItem(CUSTOM_RIG_STORAGE_KEY, JSON.stringify(next)); }
+    catch (error) { console.warn('머리 분리 설정 저장 실패:', error); }
+  };
+
   // ========================================
   // 7. 현재 캐릭터 반응
   // ========================================
@@ -319,7 +335,7 @@ function App() {
     }
     if (patch.emotion !== undefined) {
       setEmotion(patch.emotion);
-      if (patch.emotion !== emotion) setReactionId(prev => prev + 1);
+      if (patch.emotion !== 'neutral' || patch.emotion !== emotion) setReactionId(prev => prev + 1);
     }
     if (patch.action !== undefined) {
       setAction(patch.action);
@@ -379,6 +395,19 @@ function App() {
     }
   };
 
+  const handleChatReset = () => {
+    if (talkingTimerRef.current !== null) {
+      clearTimeout(talkingTimerRef.current);
+      talkingTimerRef.current = null;
+    }
+    setEmotion('neutral');
+    setAction('idle');
+    setIntensity(0.5);
+    setIsThinking(false);
+    setIsTalking(false);
+    setReactionId(previous => previous + 1);
+  };
+
   // ========================================
   // 12. 행동 자동 초기화
   // ========================================
@@ -394,6 +423,15 @@ function App() {
     return () => clearTimeout(timer);
   }, [action]);
 
+  useEffect(() => {
+    if (window.step1?.updateReaction || (emotion === 'neutral' && intensity === 0.5) || isThinking || isTalking) return;
+    const timer = setTimeout(() => {
+      setEmotion('neutral');
+      setIntensity(0.5);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [emotion, intensity, reactionId, isThinking, isTalking]);
+
   // ========================================
   // 13. FastAPI 서버 연결 확인
   // ========================================
@@ -403,6 +441,7 @@ function App() {
 
     const checkServer = async () => {
       setServerConnection('checking');
+      setAiModeLabel('');
       setServerStatus('서버 연결 확인 중...');
       try {
         const response = await fetch(
@@ -418,6 +457,7 @@ function App() {
 
         if (!controller.signal.aborted) {
           setServerStatus(data.message);
+          setAiModeLabel(data.ai_configured === false ? 'AI 설정 필요' : data.ai_mode === 'openai' ? '실제 AI' : data.ai_mode === 'mock' ? '테스트 모드' : '');
           setServerConnection('online');
         }
       } catch (error) {
@@ -448,9 +488,10 @@ function App() {
 
   const currentCharacter = characterOptions.find(option => option.type === characterType) ?? characterOptions[0];
   const activity = isThinking ? '생각하는 중' : isTalking ? '대화하는 중' : '함께할 준비 완료';
-  const renderCharacter = () => characterType === 'custom' && customRig ? (
-    <div style={{ width: Math.min(250, 330 * customRig.canvas.width / customRig.canvas.height) }}>
+  const renderCharacter = (withGuide = false) => characterType === 'custom' && customRig ? (
+    <div style={{ width: Math.min(250, 330 * customRig.canvas.width / customRig.canvas.height), position: 'relative' }}>
       <RiggedCharacter rig={customRig} reaction={reaction} isTalking={isTalking} isThinking={isThinking} reactionId={reactionId} />
+      {withGuide && showHeadGuide && <div className="rig-neck-guide" style={{ top: `${getRigHeadPlan(customRig).neckY}%` }} aria-hidden="true" />}
     </div>
   ) : characterType === 'pomeranian' ? (
     <PomeranianCharacter reaction={reaction} isTalking={isTalking} isThinking={isThinking} reactionId={reactionId} />
@@ -461,53 +502,37 @@ function App() {
 
   return (
     <div className="studio-shell">
-      <aside className="studio-sidebar" aria-label="스튜디오 메뉴">
-        <a className="studio-brand" href="#studio" aria-label="Step1 스튜디오">
-          <span className="studio-logo"><StudioIcon name="paw" width="24" height="24" /></span>
-          <span className="studio-brand-text"><strong>Step1<span>.</span></strong><small>COMPANION STUDIO</small></span>
-        </a>
-        <div className="studio-nav-label">WORKSPACE</div>
-        <nav className="studio-nav">
-          <a href="#studio" aria-label="스튜디오" title="스튜디오"><StudioIcon name="home" /><span>스튜디오</span></a>
-          <a href="#appearance" aria-label="캐릭터 설정" title="캐릭터 설정"><StudioIcon name="palette" /><span>캐릭터 설정</span></a>
-          <a href="#persona" aria-label="캐릭터 프로필" title="캐릭터 프로필"><StudioIcon name="paw" /><span>캐릭터 프로필</span></a>
-          <a href="#expressions" aria-label="감정 테스트" title="감정 테스트"><StudioIcon name="smile" /><span>감정 테스트</span></a>
-          <a href="#workshop" aria-label="커스텀 제작" title="커스텀 제작"><StudioIcon name="sparkles" /><span>커스텀 제작</span></a>
-          <a href="#conversation" aria-label="대화" title="대화"><StudioIcon name="chat" /><span>대화</span></a>
-        </nav>
-        <div className="studio-sidebar-bottom">
-          <div className="sidebar-companion"><StudioIcon name="paw" /><span>작은 친구와 만드는<br /><strong>특별한 하루.</strong></span></div>
-          <span className="studio-version">GPT Companion · Step1</span>
-        </div>
-      </aside>
       <main className="app-container" id="studio">
         <header className="studio-heading">
           <div>
-            <p className="studio-eyebrow">YOUR DESKTOP COMPANION</p>
-            <h1 className="app-title">오늘도, 함께해요<span>.</span></h1>
-            <p className="app-description">나만의 반려 캐릭터를 꾸미고 대화하는 공간</p>
+            <h1 className="app-title">Step1<span>.</span></h1>
           </div>
           <div className="studio-top-actions">
-            <button type="button" className={`server-status status-${serverConnection}`} title={serverStatus + ' · 클릭하여 다시 확인'} onClick={() => setServerRetry(n => n + 1)} aria-label={serverStatus + ', 다시 확인'}>
-              <span className="status-dot" />{serverConnection === 'online' ? '서버 연결됨' : serverConnection === 'offline' ? '연결 끊김' : '연결 확인 중'}
+            <button type="button" className={`server-status status-${aiConnection?.mode === 'chatgpt' ? (aiConnection.connected ? 'online' : 'offline') : serverConnection}`} title={aiConnection?.mode === 'chatgpt' ? 'ChatGPT 연결 설정 열기' : serverStatus + ' · 클릭하여 다시 확인'} onClick={() => aiConnection?.mode === 'chatgpt' ? setTab('chat') : setServerRetry(n => n + 1)} aria-label={aiConnection?.mode === 'chatgpt' ? 'ChatGPT 연결 설정 열기' : serverStatus + ', 다시 확인'}>
+              <span className="status-dot" />{aiConnection?.mode === 'chatgpt' ? (aiConnection.connected ? 'ChatGPT 연결됨' : 'ChatGPT 연결 필요') : serverConnection === 'online' ? (aiModeLabel || '서버 연결됨') : serverConnection === 'offline' ? '연결 끊김' : '연결 확인 중'}
               <StudioIcon name="reset" width="13" height="13" />
             </button>
             {window.step1?.openChat ? <button type="button" className="studio-primary" onClick={() => window.step1?.openChat()}><StudioIcon name="external" /> 미니 채팅</button>
-              : <a className="studio-primary" href="#conversation"><StudioIcon name="chat" /> 대화하기</a>}
+              : <button className="studio-primary" onClick={() => setTab('chat')}><StudioIcon name="chat" /> 대화하기</button>}
           </div>
         </header>
 
-        <div className="studio-grid">
+        <nav className="studio-tabs" aria-label="주 메뉴" data-active={tab}>
+          {([['character', '캐릭터'], ['profile', '프로필'], ['chat', '대화']] as const).map(([id, label]) =>
+            <button key={id} type="button" aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>
+          )}
+        </nav>
+        <div className="studio-grid studio-panel" hidden={tab !== 'character'}>
           <section className="studio-card companion-card" id="appearance" aria-labelledby="appearance-title">
             <header className="card-heading">
-              <div><p className="section-kicker">01 / COMPANION</p><h2 id="appearance-title">나의 캐릭터</h2></div>
+              <div><h2 id="appearance-title">나의 캐릭터</h2></div>
               <span className="activity-pill"><span className="activity-dot" />{activity}</span>
             </header>
             <div className="preview-stage">
               <div className="preview-meta"><span><span className="preview-live-dot" /> LIVE PREVIEW</span><strong>{characterSize}%</strong></div>
               <div className="character-display" aria-label="캐릭터 미리보기">
                 <div className="character-size-stage" style={{ zoom: characterSize / 100 }}>
-                  {renderCharacter()}
+                  {renderCharacter(true)}
                 </div>
               </div>
               <div className="preview-caption"><strong>{profile.name}</strong><span>{currentCharacter.label} · {PERSONALITIES[profile.personality].label}</span></div>
@@ -524,27 +549,10 @@ function App() {
               ))}
             </div>
             <CharacterSizeControl size={characterSize} onChange={handleCharacterSizeChange} />
+            {characterType === 'custom' && customRig && <RigHeadControl rig={customRig} onChange={updateHeadSplit} onGuide={setShowHeadGuide} />}
           </section>
 
-          <section className="studio-card conversation-card" id="conversation" aria-labelledby="conversation-title">
-            <header className="card-heading">
-              <div><p className="section-kicker">02 / CHAT</p><h2 id="conversation-title">우리의 대화</h2></div>
-              <span className="conversation-icon"><StudioIcon name="chat" /></span>
-            </header>
-            <p className="card-description">{profile.name}에게 편하게 이야기해 보세요.</p>
-            <Chat profile={profile} onReaction={handleAIReaction} onLoadingChange={handleThinkingChange} onTalkingStart={handleTalkingStart} />
-            <div className="conversation-note"><StudioIcon name="link" width="14" height="14" />{window.step1 ? '미니 채팅창과 대화 기록을 공유해요.' : '캐릭터가 대화에 따라 반응해요.'}</div>
-          </section>
-
-          <section className="studio-card persona-card" id="persona" aria-labelledby="persona-title">
-            {personasReady ? <PersonaEditor
-              key={JSON.stringify([characterType, profile])}
-              type={characterType} characterLabel={currentCharacter.label} profile={profile}
-              onSave={next => saveProfile(characterType, next)} />
-              : <p className="card-description" role="status">캐릭터 프로필 불러오는 중…</p>}
-          </section>
           <section className="studio-card expression-card" id="expressions" aria-label="감정 및 행동 설정">
-            <p className="section-kicker">04 / EXPRESSION</p>
             <ReactionControls emotion={emotion} action={action} intensity={intensity}
               preview={<div className="character-size-stage" style={{ zoom: .47 }}>{renderCharacter()}</div>}
               previewName={profile.name}
@@ -552,13 +560,34 @@ function App() {
               onEmotionChange={(emotion) => updateManualReaction({ emotion })}
               onActionChange={(action) => updateManualReaction({ action })}
               onIntensityChange={(intensity) => updateManualReaction({ intensity })} />
+              <p className="reset-hint">표정은 대화가 끝난 뒤 3.5초 후 기본 표정으로 돌아와요.</p>
           </section>
-          <section className="studio-card workshop-card" id="workshop" aria-label="커스텀 캐릭터 제작">
-            <p className="section-kicker">05 / WORKSHOP</p>
+          <details className="studio-card workshop-card" id="workshop">
+            <summary><StudioIcon name="sparkles" /> 내 캐릭터 만들기</summary>
             <CharacterUploader onCharacterGenerated={handleCustomCharacterGenerated} />
+          </details>
+        </div>
+        <div className="studio-panel" hidden={tab !== 'chat'}>
+          <section className="studio-card conversation-card" id="conversation" aria-labelledby="conversation-title">
+            <header className="card-heading">
+              <div><h2 id="conversation-title">우리의 대화</h2></div>
+              <span className="conversation-icon"><StudioIcon name="chat" /></span>
+            </header>
+            <p className="card-description">{profile.name}에게 편하게 이야기해 보세요.</p>
+            <AIConnectionPanel busy={isThinking} visible={tab === 'chat'} backendLabel={aiModeLabel} />
+            <Chat profile={profile} onReaction={handleAIReaction} onLoadingChange={handleThinkingChange} onTalkingStart={handleTalkingStart} onReset={handleChatReset} />
+            <div className="conversation-note"><StudioIcon name="link" width="14" height="14" />{window.step1 ? '미니 채팅창과 대화 기록을 공유해요.' : '캐릭터가 대화에 따라 반응해요.'}</div>
           </section>
         </div>
-        <footer className="studio-footer"><StudioIcon name="paw" width="14" height="14" /> Made for little moments, by Step1.</footer>
+        <div className="studio-panel" hidden={tab !== 'profile'}>
+          <section className="studio-card persona-card" id="persona" aria-labelledby="persona-title">
+            {personasReady ? <PersonaEditor
+              key={JSON.stringify([characterType, profile])}
+              type={characterType} characterLabel={currentCharacter.label} profile={profile}
+              onSave={next => saveProfile(characterType, next)} />
+              : <p className="card-description" role="status">캐릭터 프로필 불러오는 중…</p>}
+          </section>
+        </div>
       </main>
     </div>
   );

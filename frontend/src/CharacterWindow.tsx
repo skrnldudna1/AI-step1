@@ -14,6 +14,7 @@ import type {
 
 import './CharacterWindow.css';
 import { isCharacterPixel, prepareCharacterImage } from './characterHitTest';
+import { createCharacterClickHandler } from './characterClick';
 
 // ========================================
 // 기본 감정 상태
@@ -83,6 +84,15 @@ export default function CharacterWindow() {
   });
   const windowRef = useRef<HTMLDivElement>(null);
   const ignoredRef = useRef(true);
+  const clickHandler = useRef<ReturnType<typeof createCharacterClickHandler> | null>(null);
+  if (!clickHandler.current) {
+    clickHandler.current = createCharacterClickHandler({
+      onSingle: () => window.step1?.toggleChat(),
+      onDouble: () => window.step1?.openSettings(),
+    });
+  }
+
+  useEffect(() => () => clickHandler.current?.cancel(), []);
 
   const updateMouseInteraction = useCallback((point: { x: number; y: number } | null) => {
     const root = windowRef.current;
@@ -102,6 +112,7 @@ export default function CharacterWindow() {
     const unsubscribe = api.onCharacterCursor(updateMouseInteraction);
     const cancelOnBlur = () => {
       dragRef.current.isDown = false;
+      clickHandler.current?.cancel();
       updateMouseInteraction(null);
     };
     window.addEventListener('blur', cancelOnBlur);
@@ -242,6 +253,7 @@ useEffect(() => {
 
     if (!drag.hasMoved && distance < 5) return;
 
+    if (!drag.hasMoved) clickHandler.current?.cancel();
     drag.hasMoved = true;
 
     const dx = e.screenX - drag.lastX;
@@ -263,7 +275,7 @@ useEffect(() => {
     drag.isDown = false;
 
     if (!drag.hasMoved) {
-      window.step1?.toggleChat();
+      clickHandler.current?.click({ x: e.screenX, y: e.screenY });
     }
     updateMouseInteraction({ x: e.clientX, y: e.clientY });
   };
@@ -271,6 +283,7 @@ useEffect(() => {
   const handlePointerCancel = () => {
     if (!dragRef.current.isDown) return;
     dragRef.current.isDown = false;
+    clickHandler.current?.cancel();
     updateMouseInteraction(null);
   };
 

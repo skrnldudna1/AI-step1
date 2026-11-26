@@ -3,6 +3,7 @@ import type { CharacterReaction } from '../../types/character';
 import { EMOTION_CONFIG } from '../../types/emotion';
 import { ExpressionEye, ExpressionMouth, ExpressionAccents } from './ExpressionFeatures';
 import { useExpressionMotion } from './useExpressionMotion';
+import { clipPath, POM_HEAD_CLIP, POM_BODY_CLIP } from '../../headRig';
 import './PomeranianCharacter.css';
 
 const BASE = '/character/pomeranian/';
@@ -51,11 +52,15 @@ export default function PomeranianCharacter({ reaction, isTalking, isThinking, r
     : emotion === 'sad' ? 'mouth_sad.png' : emotion === 'surprised' ? 'mouth_surprised.png' : 'mouth_idle.png';
   return (
     <div className="pomeranian-container">
-      <div ref={motion.ref} style={motion.style} className={`pomeranian-character ${motion.className}`}
+      <div ref={motion.ref} style={motion.style} className={`pomeranian-character has-head-rig ${motion.className}`}
         data-emotion={reaction.emotion} data-expression={emotion} role="img"
         aria-label={`포메라니안: ${isThinking ? '생각하는 중' : EMOTION_CONFIG[reaction.emotion].label}`}>
         <img src={BASE + 'tail.png'} className="pomeranian-part pomeranian-tail" alt="" draggable={false} />
-        <img src={BASE + 'base.png'} className="pomeranian-part pomeranian-base" alt="" draggable={false} />
+        <img src={BASE + 'base.png'} className="pomeranian-part pomeranian-base pomeranian-body" alt="" draggable={false}
+          style={{ clipPath: clipPath(POM_BODY_CLIP) }} data-hit-polygon={JSON.stringify(POM_BODY_CLIP)} />
+        <div className="companion-head-layer pomeranian-head" data-head-pivot="52,60">
+        <img src={BASE + 'base.png'} className="pomeranian-part pomeranian-base pomeranian-head-art" alt="" draggable={false}
+          style={{ clipPath: clipPath(POM_HEAD_CLIP) }} data-hit-polygon={JSON.stringify(POM_HEAD_CLIP)} />
         {EYE_FILES.map(file => <img key={file} src={BASE + file} alt="" draggable={false}
           className={`pomeranian-part pomeranian-eyes ${hasOriginalSprite && eye === file ? 'is-active' : ''}`} />)}
         <img src={BASE + 'nose.png'} className="pomeranian-part pomeranian-nose" alt="" draggable={false} />
@@ -69,6 +74,7 @@ export default function PomeranianCharacter({ reaction, isTalking, isThinking, r
             <ExpressionMouth emotion={emotion} x={533} y={470} scale={2.2} talking={speaking} />
           </>}
         </svg>
+        </div>
       </div>
     </div>
   );

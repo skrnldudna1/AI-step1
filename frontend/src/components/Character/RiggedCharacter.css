@@ -1,4 +1,13 @@
 .rigged-character { transform-origin: center bottom; will-change: transform; }
+.rig-expression-slot { position: absolute; inset: 0; pointer-events: none; opacity: 0; visibility: hidden; transform: scale(.985); transform-origin: center bottom; z-index: 1;
+  transition: opacity 260ms cubic-bezier(.22,.61,.36,1), transform 260ms cubic-bezier(.22,.61,.36,1), visibility 0s linear 260ms; }
+.rig-expression-slot[data-active="true"] { opacity: 1; visibility: visible; transform: scale(1); z-index: 2; transition-delay: 0s; }
+.rig-reference-art .rig-part-eyes { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .rig-expression-slot { transition: none; transform: none; } }
+.rig-art { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); }
+.rig-mesh-fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; user-select: none; }
+.rig-mesh-canvas { position: absolute; left: -6.5%; top: -6.5%; width: 113%; height: 113%; pointer-events: none; }
+.rig-head-layer { z-index: 100; --head-nod-compression: .97; --head-nod-travel: 2px; }
 .rig-part { display: block; object-fit: fill; user-select: none; -webkit-user-drag: none; transform: translate(var(--part-x, 0%), var(--part-y, 0%)) rotate(var(--part-angle, 0deg)) scale(var(--part-sx, 1), var(--part-sy, 1)); transition: transform 180ms ease; }
 .rig-part-eyes { animation: rig-face-blink 3.8s infinite; }
 @keyframes rig-face-blink {
@@ -13,4 +22,16 @@
   to { transform: translate(var(--part-x,0%),var(--part-y,0%)) rotate(var(--part-angle,0deg)) scale(calc(var(--part-sx,1) * 1.08),calc(var(--part-sy,1) * 1.4)); }
 }
 .rig-expression-layer { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1000; pointer-events: none; overflow: visible; }
-@media (prefers-reduced-motion: reduce) { .rig-part, .rigged-character.emotion-motion.is-thinking .rig-part-eyes { animation: none; transition: none; } }
+.rigged-character.is-talking:not(.is-thinking) .rig-part-arm { animation: rig-arm-gesture 1.7s ease-in-out infinite; }
+.rigged-character:is(.action-bounce,.emotion-excited,.emotion-playful) .rig-part-arm { animation: rig-arm-gesture .85s ease-in-out infinite; }
+.rigged-character:is(.action-bounce,.emotion-excited,.emotion-playful) .rig-part-leg { animation: rig-leg-step .7s ease-in-out infinite; }
+.rig-part-leg[data-part^="right_"], .rig-part-arm[data-part^="right_"] { animation-delay: -.3s !important; }
+@keyframes rig-arm-gesture {
+  0%,100% { transform: translate(var(--part-x,0%),var(--part-y,0%)) rotate(var(--part-angle,0deg)) scale(var(--part-sx,1),var(--part-sy,1)); }
+  40%,60% { transform: translate(var(--part-x,0%),var(--part-y,0%)) rotate(calc(var(--part-angle,0deg) + var(--arm-swing,4deg))) scale(var(--part-sx,1),var(--part-sy,1)); }
+}
+@keyframes rig-leg-step {
+  0%,100% { transform: rotate(var(--part-angle,0deg)); }
+  50% { transform: rotate(calc(var(--part-angle,0deg) + var(--leg-swing,4deg))); }
+}
+@media (prefers-reduced-motion: reduce) { .rigged-character .rig-part { animation: none !important; transition: none; } }

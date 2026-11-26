@@ -1,16 +1,18 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 from starlette.concurrency import run_in_threadpool
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 from io import BytesIO
 
-from app.services.ai_service import ai_service
+from app.services.ai_service import ai_service, ai_mode, ai_configured
+from app.providers.openai_provider import ProviderError
 from app.services.character_service import character_service
 from app.services.rig_service import rig_service
-from app.schemas.ai import AIResponse, CharacterProfile
+from app.schemas.ai import AIResponse, CharacterProfile, ChatTurn, ConversationSituation
+from app.schemas.rig import RigRegion, ExpressionLayout
 
 
 # FastAPI 애플리케이션 생성
@@ -42,6 +44,8 @@ app.mount(
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     profile: CharacterProfile | None = None
+    history: list[ChatTurn] = Field(default_factory=list, max_length=12)
+    previous_situation: ConversationSituation | None = None
 
 
 # 기본 API
@@ -57,14 +61,19 @@ def read_root():
 def health_check():
     return {
         "status": "ok",
-        "message": "FastAPI 서버 연결 성공!"
+        "message": "FastAPI 서버 연결 성공!",
+        "ai_mode": ai_mode,
+        "ai_configured": ai_configured,
     }
 
 
 # 채팅 API
 @app.post("/api/chat", response_model=AIResponse)
 def chat(request: ChatRequest) -> AIResponse:
-    return ai_service.chat(request.message, request.profile)
+    try:
+        return ai_service.chat(request.message, request.profile, request.history, request.previous_situation)
+    except ProviderError as error:
+        raise HTTPException(status_code=502 if ai_configured else 503, detail=str(error)) from None
 
 
 # ========================================
@@ -112,6 +121,8 @@ async def validate_image(file: UploadFile):
                     detail="이미지 해상도가 너무 큽니다."
                 )
 
+            oriented = ImageOps.exif_transpose(image)
+            width, height = oriented.size
             metadata = {
                 "width": width,
                 "height": height,
@@ -123,7 +134,7 @@ async def validate_image(file: UploadFile):
                 )
             }
 
-            image.verify()
+            oriented.load()
 
     except (
         UnidentifiedImageError,
@@ -174,14 +185,46 @@ async def analyze_character(file: UploadFile = File(...)):
 # ========================================
 
 @app.post("/api/character/generate")
-async def generate_character(file: UploadFile = File(...)):
+async def generate_character(
+    file: UploadFile = File(...),
+    regions: str | None = Form(default=None),
+    preserve_face: bool = Form(default=False),
+    expression_files: list[UploadFile] | None = File(default=None),
+    expression_layouts: str | None = Form(default=None),
+):
 
     contents, metadata = await validate_image(file)
+    parsed_regions = None
+    if regions is not None:
+        if len(regions) > 40000:
+            raise HTTPException(status_code=422, detail="파츠 영역 데이터가 너무 큽니다.")
+        try:
+            parsed_regions = TypeAdapter(list[RigRegion]).validate_json(regions)
+            if len(parsed_regions) > 15 or (not parsed_regions and not preserve_face):
+                raise ValueError("파츠 개수")
+        except (ValidationError, ValueError):
+            raise HTTPException(status_code=422, detail="파츠 영역 또는 회전 중심 좌표가 올바르지 않습니다.")
+    uploads = expression_files or []
+    variants = []
+    if uploads or expression_layouts is not None:
+        if not expression_layouts or len(expression_layouts) > 160000 or len(uploads) > 4:
+            raise HTTPException(status_code=422, detail="표정 이미지는 최대 4장까지 등록할 수 있어요.")
+        try:
+            layouts = TypeAdapter(list[ExpressionLayout]).validate_json(expression_layouts)
+            if len(layouts) != len(uploads) or len({layout.emotion for layout in layouts}) != len(layouts) or any(layout.emotion == "neutral" for layout in layouts):
+                raise ValueError("표정 매핑")
+            if any(len({region.id for region in layout.regions}) != len(layout.regions) for layout in layouts):
+                raise ValueError("중복 파츠")
+        except (ValidationError, ValueError):
+            raise HTTPException(status_code=422, detail="표정 이미지와 파츠 영역을 다시 확인해 주세요.")
+        for upload, layout in zip(uploads, layouts):
+            image, _ = await validate_image(upload)
+            variants.append((layout.emotion, image, layout.regions))
 
     try:
         rig = await run_in_threadpool(
-            rig_service.generate,
-            contents
+            rig_service.generate_with_expressions,
+            contents, parsed_regions, preserve_face, variants
         )
 
     except (ValueError, OSError) as error:

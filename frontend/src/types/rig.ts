@@ -29,6 +29,16 @@ export interface RigPart {
 
 export type RigExpression = Record<string, string>;
 
+export type RigRegionId = 'head' | 'torso' | 'left_eye' | 'right_eye' | 'left_eyebrow' | 'right_eyebrow' |
+  'nose' | 'mouth' | 'hair' | 'left_arm' | 'right_arm' | 'left_leg' | 'right_leg' | 'tail' | 'accessory';
+export interface RigPoint { x: number; y: number }
+export interface RigRegion {
+  id: RigRegionId;
+  points: RigPoint[];
+  pivot: RigPoint;
+  mode: 'region' | 'detail';
+}
+
 export interface CharacterRig {
   id: string;
   name: string;
@@ -45,6 +55,14 @@ export interface CharacterRig {
   } | null;
 
   parts: RigPart[];
+  // Optional manual neck position (percent of canvas height).
+  headSplit?: number;
+  partLayoutVersion?: number;
+  preserveFace?: boolean;
+  mesh?: { src: string; regions: RigRegion[] };
+  assetBase?: string;
+  // Finished expression drawings, crossfaded inside the primary canvas.
+  expressionRigs?: Partial<Record<Emotion, CharacterRig>>;
 
   expressions: Partial<Record<Emotion, RigExpression>>;
 }

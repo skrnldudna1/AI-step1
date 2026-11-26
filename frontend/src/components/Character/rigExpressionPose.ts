@@ -50,6 +50,15 @@ export function getRigExpressionPose(part: RigPart, emotion: VisualEmotion, canv
       case 'playful': return pose({ angle: -7, sx: 1.15 });
       case 'affectionate': return pose({ sx: 1.12, sy: .8 });
     }
+  } else if (part.type === 'arm') {
+    switch (emotion) {
+      case 'excited': return pose({ angle: -sign * 8 });
+      case 'happy': case 'affectionate': return pose({ angle: -sign * 4 });
+      case 'playful': return pose({ angle: left ? -6 : 4 });
+      case 'sad': case 'sleepy': return pose({ angle: sign * 3 });
+    }
+  } else if (part.type === 'leg') {
+    if (emotion === 'excited' || emotion === 'playful') return pose({ angle: sign * 4 });
   }
   return { ...neutral };
 }

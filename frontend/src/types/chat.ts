@@ -10,3 +10,5 @@ export interface ChatState {
   isLoading: boolean;
   pendingSenderName?: string | null;
 }
+
+export type ChatResizeEdge = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';

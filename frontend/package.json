@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test electron/tests/*.test.cjs",
+    "test": "node --experimental-strip-types --test electron/tests/*.test.cjs",
   "dev": "vite",
   "build": "tsc -b && vite build",
   "lint": "oxlint",

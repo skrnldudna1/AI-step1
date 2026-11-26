@@ -40,6 +40,28 @@
 @keyframes companion-shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } }
 @keyframes companion-bounce { 0%,100% { transform: translateY(0) scale(1); } 15% { transform: scale(1.07,.94); } 42% { transform: translateY(var(--bounce-height, -18px)) scale(.98,1.03); } 68% { transform: scale(1.06,.96); } 82% { transform: translateY(-4px); } }
 @keyframes companion-talking { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+
+/* A separated body remains fixed while the head moves at the neck pivot. */
+.companion-head-layer { position: absolute; inset: 0; transform-origin: 50% 70%; will-change: transform; }
+.emotion-motion.has-head-rig:is(.action-nod,.action-shake,.is-thinking),
+.emotion-motion.has-head-rig.action-idle:is(.emotion-confused,.emotion-shy,.emotion-playful),
+.image-character.emotion-motion.has-head-rig.is-talking:not(.is-thinking).action-idle { animation: none !important; }
+.has-head-rig.action-nod:not(.is-thinking) .companion-head-layer { animation: companion-head-nod .8s ease-in-out 1; }
+.has-head-rig.action-shake:not(.is-thinking) .companion-head-layer { animation: companion-head-shake .8s ease-in-out 1; }
+.has-head-rig.is-thinking .companion-head-layer { animation: companion-thinking 3.8s ease-in-out infinite; }
+.has-head-rig.action-idle.emotion-confused:not(.is-thinking) .companion-head-layer { animation: companion-head-tilt 2.3s ease-in-out infinite; }
+.has-head-rig.action-idle.emotion-shy:not(.is-thinking) .companion-head-layer { animation: companion-head-shy 2.4s ease-in-out infinite; }
+.has-head-rig.action-idle.emotion-playful:not(.is-thinking) .companion-head-layer { animation: companion-head-playful 1.9s ease-in-out infinite; }
+.image-character.has-head-rig.is-talking.action-idle:not(.is-thinking) .companion-head-layer { animation: companion-head-talk .4s ease-in-out infinite; }
+@keyframes companion-head-nod { 0%,100% { transform: translateY(0) scaleY(1); } 45% { transform: translateY(var(--head-nod-travel, 2px)) scaleY(var(--head-nod-compression, .965)); } 68% { transform: translateY(.5px) scaleY(.99); } }
+@keyframes companion-head-shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+@keyframes companion-head-tilt { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-3.5deg); } }
+@keyframes companion-head-shy { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg) scaleY(.985); } }
+@keyframes companion-head-playful { 0%,100% { transform: rotate(0); } 50% { transform: rotate(3deg); } }
+@keyframes companion-head-talk { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.99); } }
+.character-face.action-nod:not(.is-thinking), .rigged-character.head-only.action-nod:not(.is-thinking) { animation: companion-head-nod .8s ease-in-out 1; transform-origin: 50% 78%; }
+.character-face.action-nod:not(.is-thinking) { --head-nod-compression: .95; --head-nod-travel: 3px; }
 @media (prefers-reduced-motion: reduce) {
   .emotion-motion, .emotion-motion.is-thinking, .emotion-motion.action-idle, .emotion-motion.emotion-happy.action-idle, .emotion-motion:is(.emotion-excited,.emotion-sad,.emotion-shy,.emotion-angry,.emotion-confused,.emotion-sleepy,.emotion-surprised,.emotion-playful,.emotion-affectionate).action-idle, .image-character.emotion-motion.is-talking:not(.is-thinking).action-idle, .expression-eye-blink, .expression-mouth-speaking, .expression-hearts { animation: none !important; }
 }
+@media (prefers-reduced-motion: reduce) { .companion-head-layer, .character-face.action-nod, .rigged-character.head-only.action-nod { animation: none !important; } }

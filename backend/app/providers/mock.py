@@ -1,5 +1,6 @@
 from app.providers.base import AIProvider
-from app.schemas.ai import AIResponse, CharacterProfile, CharacterReaction
+from app.providers.contextual_expression import normalize_reaction
+from app.schemas.ai import AIResponse, CharacterProfile, CharacterReaction, ChatTurn, ConversationSituation
 
 
 # Each set preserves the same five intents, with distinct personalities and speech styles.
@@ -120,9 +121,48 @@ PERSONALITY_TAILS = {
     "focused": (" 지금 할 수 있는 것부터 하나씩 생각해 보자.", " 지금 할 수 있는 것부터 하나씩 생각해 볼까요?", " 하나씩 정리하자."),
 }
 
+# Offline mode cannot reason like a connected language model. Keep a small,
+# conservative fallback for explicit events and continuations, with negative
+# events taking priority over laughter or emotion words in the same sentence.
+EMOTION_SITUATIONS = {
+    "neutral": "casual", "happy": "celebrating", "excited": "celebrating",
+    "sad": "empathizing", "shy": "affection", "angry": "serious",
+    "confused": "clarifying", "sleepy": "winding_down", "surprised": "surprised",
+    "playful": "playing", "affectionate": "affection",
+}
+
+
+def event_situation(message: str):
+    if any(marker in message for marker in ("뜻이 뭐", "무슨 뜻", "뜻을 알려", "뜻은 뭐", "단어 뜻", "번역해", "예문", "가정하면", "만약에")):
+        return "explaining"
+    if any(marker in message for marker in ("무지개다리", "세상을 떠", "하늘나라", "돌아가셨어", "헤어졌", "이별했", "부고", "장례식", "슬퍼", "속상해", "힘들어")) or (
+        any(topic in message for topic in ("시험", "면접", "지원", "대회")) and any(event in message for event in ("떨어졌", "탈락", "실패했"))
+    ):
+        return "empathizing"
+    if any(marker in message for marker in ("합격했", "합격이야", "승진했", "성공했", "1등 했", "우승했")) or ("면접" in message and "붙었" in message):
+        return "celebrating"
+    if any(marker in message for marker in ("웃긴 일", "웃겨", "웃긴 이야기", "웃겼어", "농담이야", "장난이야")) or ("화상회의" in message and "야옹" in message):
+        return "playing"
+    return None
+
+
+def continuation_situation(message: str, history, previous_situation):
+    current = event_situation(message)
+    if current:
+        return current
+    short = message.strip().strip(".!?…~ ")
+    if short in {"응", "어", "그래", "그렇구나", "맞아", "그러게", "그랬어", "진짜", "그러니까", "응응", "네"}:
+        if previous_situation in {"empathizing", "reassuring", "playing", "celebrating", "serious", "winding_down"}:
+            return previous_situation
+        if history:
+            for turn in reversed(history):
+                if turn.role == "user":
+                    return event_situation(turn.content)
+    return None
+
 
 class MockAIProvider(AIProvider):
-    def generate(self, message: str, profile: CharacterProfile | None = None) -> AIResponse:
+    def generate(self, message: str, profile: CharacterProfile | None = None, history: list[ChatTurn] | None = None, previous_situation: ConversationSituation | None = None) -> AIResponse:
         profile = profile or CharacterProfile()
         templates = REPLIES[(profile.personality, profile.tone)]
         if "이름" in message and any(word in message for word in ("너", "뭐", "누구", "알려", "네", "니")):
@@ -131,7 +171,26 @@ class MockAIProvider(AIProvider):
                 if profile.tone == "polite"
                 else f"내 이름은 {profile.name}!"
             )
-            return AIResponse(reply=reply, reaction=CharacterReaction(emotion="happy", intensity=0.6, action="nod"))
+            return AIResponse(reply=reply, situation="casual", reaction=CharacterReaction(emotion="happy", intensity=0.6, action="nod"))
+
+        context = continuation_situation(message, history, previous_situation)
+        if context:
+            if context == "empathizing":
+                reply, emotion, strength, action = templates[2], "sad", .6, "nod"
+            elif context == "celebrating":
+                reply, emotion, strength, action = templates[1], "happy", .85, "bounce"
+            elif context == "playing":
+                reply, emotion, strength, action = EXTRA_REPLIES["playful"][TONE_INDEX[profile.tone]], "playful", .7, "idle"
+            elif context == "reassuring":
+                reply, emotion, strength, action = templates[2], "affectionate", .5, "nod"
+            elif context == "winding_down":
+                reply, emotion, strength, action = EXTRA_REPLIES["sleepy"][TONE_INDEX[profile.tone]], "sleepy", .45, "idle"
+            else:
+                reply, emotion, strength, action = templates[4], "neutral", .5, "idle"
+            if profile.personality == "calm":
+                strength = max(.3, strength - .2)
+                if action == "bounce": action = "nod"
+            return AIResponse(reply=reply, situation=context, reaction=normalize_reaction(context, CharacterReaction(emotion=emotion, intensity=strength, action=action)))
 
         for emotion, (keywords, intensity, action) in EXTRA_EMOTIONS.items():
             if any(keyword in message for keyword in keywords):
@@ -144,7 +203,7 @@ class MockAIProvider(AIProvider):
                     action = "nod" if action == "bounce" else action
                 elif profile.personality == "playful" and emotion in ("excited", "playful", "affectionate"):
                     intensity = min(1.0, intensity + 0.1)
-                return AIResponse(reply=reply, reaction=CharacterReaction(emotion=emotion, intensity=intensity, action=action))
+                return AIResponse(reply=reply, situation=EMOTION_SITUATIONS[emotion], reaction=CharacterReaction(emotion=emotion, intensity=intensity, action=action))
 
         if "슬퍼" in message or "힘들어" in message:
             index, emotion, intensity, action = 2, "sad", 0.7, "nod"
@@ -167,4 +226,5 @@ class MockAIProvider(AIProvider):
         return AIResponse(
             reply=templates[index],
             reaction=CharacterReaction(emotion=emotion, intensity=intensity, action=action),
+            situation="casual" if index == 0 else EMOTION_SITUATIONS[emotion],
         )
