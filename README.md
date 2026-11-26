@@ -10,94 +10,48 @@
 
 ## About
 
-Step1은 바탕화면에서 함께 생활하는 인터랙티브 AI 캐릭터 프로젝트입니다. 캐릭터의 외형·이름·성격·말투를 직접 설정하고, AI와 대화하며 상황에 어울리는 표정과 움직임을 경험할 수 있습니다.
+**Step1**은 바탕화면에 살아 움직이는 나만의 AI 캐릭터를 만드는 프로젝트입니다.
 
-**Tech:** Electron · React · TypeScript · FastAPI · Python · OpenCV
+기존의 텍스트 중심 AI 경험에 캐릭터의 외형, 성격, 표정과 움직임을 더해 대화를 더욱 친근하고 생동감 있게 표현합니다.
 
-## Features
+## Key Features
 
-- **데스크톱 캐릭터** — 투명 창, 클릭·더블클릭·드래그, 50–200% 크기 조절
-- **미니 채팅** — 독립 이동, 크기·투명도 조절 및 저장, 스튜디오와 세션 대화 동기화
-- **대화와 감정** — 최근 대화의 맥락과 상황에 맞는 11가지 감정, 행동, 표정 자동 복귀
-- **커스텀 캐릭터** — AI 파츠 분석, 수동 영역·관절 편집, 머리와 팔다리의 메시 리깅
-- **표정 이미지** — 최대 4개 등록, 감정에 따른 부드러운 이미지 전환과 기본 표정 복귀
-- **Companion Studio** — 모찌·루나·포미 또는 직접 만든 캐릭터, 개별 프로필 및 감정 테스트
-
-## Getting Started (macOS)
-
-Python 3.13, Node.js 20.19+ 또는 22.12+가 필요합니다. 저장소를 `~/Desktop/Step1`에 내려받은 경우를 기준으로 설명합니다.
-
-### 1. Backend
-
-```bash
-cd ~/Desktop/Step1/backend
-python3.13 -m venv ~/.venvs/step1
-source ~/.venvs/step1/bin/activate
-python -m pip install fastapi "uvicorn[standard]" python-multipart pillow numpy opencv-python-headless openai python-dotenv
-uvicorn main:app --reload --reload-dir app
-```
-
-가상환경 생성과 라이브러리 설치는 최초 한 번만 실행합니다. 서버 상태: [API Health](http://127.0.0.1:8000/api/health)
-
-### 2. Frontend
-
-새 터미널을 열어 실행합니다.
-
-```bash
-cd ~/Desktop/Step1/frontend
-npm ci
-npm run dev
-```
-
-### 3. Desktop App
-
-프론트엔드 서버를 실행한 상태에서 새로운 터미널을 엽니다.
-
-```bash
-cd ~/Desktop/Step1/frontend
-npm run electron
-```
-
-캐릭터 클릭은 미니 채팅, 더블클릭은 설정창 열기·닫기입니다.
-
-## AI Connection
-
-| 방식 | 설명 |
+| 기능 | 경험 |
 | :--- | :--- |
-| Mock | 무료 테스트 모드 (기본값, 제한적인 상황 반응) |
-| ChatGPT | 앱의 **Continue with ChatGPT** 버튼으로 지원되는 계정 연동 |
-| OpenAI API | `backend/.env.example` 참고, `backend/.env`에 API 키 저장 후 `STEP1_AI_PROVIDER=openai uvicorn main:app --reload --reload-dir app` 실행 |
+| 💬 대화 | 최근 대화의 흐름과 상황을 이해하고 자연스럽게 반응하는 AI |
+| 😊 감정 표현 | 11가지 감정, 상황별 행동, 생각하기 및 표정 자동 복귀 |
+| 🖼️ 캐릭터 제작 | 사용자 이미지, AI 영역 분석, 수동 관절 편집 및 메시 리깅 |
+| ✨ 표정 전환 | 감정별 이미지 최대 4장, 실제 그림 간 부드러운 전환과 복귀 |
+| 🐾 데스크톱 캐릭터 | 투명 배경, 자유로운 위치 이동 및 크기 조절 |
+| 💭 미니 채팅 | 독립적인 채팅창, 크기·투명도 조절 및 대화 동기화 |
+| 🎨 개인화 | 캐릭터별 이름, 성격과 말투를 설정하는 Companion Studio |
 
-ChatGPT 계정 연동은 [공식 로컬 앱 로그인 방식](https://developers.openai.com/siwc/token-sharing-open-source)을 사용하며 계정 지원 여부와 사용 한도에 따릅니다. OpenAI API는 별도 사용료가 발생할 수 있습니다.
+## Meet the Companions
 
-> 실제 AI 모드에서는 현재 Step1 대화 문맥을 전송합니다. ChatGPT 기존 기록·기억은 가져오지 않으며, 계정 로그인 정보는 OS 암호화 저장소에 저장합니다.
+| Character | Personality |
+| :--- | :--- |
+| **모찌** · Basic | 다정한 친구 |
+| **루나** · Illustration | 차분한 친구 |
+| **포미** · Pomeranian | 장난꾸러기 |
+| **Custom** | 내가 직접 만든 친구 |
 
-## Custom Character
+## Character Animation
 
-1. 대표 이미지를 등록합니다. 투명 PNG를 권장합니다.
-2. 필요하면 AI 분석 또는 수동 편집으로 움직일 영역을 지정합니다.
-3. 다른 표정의 이미지를 최대 4장 추가하고 각각 감정을 지정합니다.
-4. 캐릭터를 생성한 후 감정 버튼으로 테스트합니다.
+대표 이미지의 눈·눈썹·입, 머리와 팔다리를 메시 리깅으로 움직입니다. 감정별 참고 이미지가 등록되어 있다면 실제 그림으로 자연스럽게 전환하고, 감정이 끝나면 기본 표정으로 돌아옵니다.
 
-등록한 표정 그림은 대표 그림과 약 260ms 동안 부드럽게 전환됩니다. 표정이 끝나면 기본 그림으로 돌아오며, 표정별 이미지 없이도 메시 리깅으로 기본 감정을 표현할 수 있습니다.
+슬픈 이야기에는 공감하는 표정, 웃긴 상황에는 장난기 어린 표정처럼 단어 자체보다 대화의 맥락을 중심으로 표현합니다.
 
-## Development
+## AI & Technology
 
-```bash
-# frontend
-cd ~/Desktop/Step1/frontend
-npm test
-npm run build
+Step1은 무료 테스트 모드, ChatGPT 계정 연동, OpenAI API 연결을 지원합니다. 실제 AI 기능은 선택적으로 연결할 수 있습니다.
 
-# backend
-cd ~/Desktop/Step1/backend
-source ~/.venvs/step1/bin/activate
-STEP1_AI_PROVIDER=mock python -m unittest discover -s tests -v
-```
+**Electron · React · TypeScript · FastAPI · Python · OpenCV · WebGL**
 
-현재 단계 **STEP 21-3** · [개발 로드맵](./ROADMAP.md)
+## Roadmap
 
-자동 리깅의 품질은 이미지와 지정 영역에 따라 달라질 수 있습니다. 장기 기억·대화 영구 저장·음성 대화는 추후 구현 예정입니다.
+현재 **STEP 21-3** — 자연스러운 캐릭터 표정 전환과 상황 기반 감정 표현을 구현했습니다. 다음 목표는 대화 기록과 장기 기억, 능동적인 상호작용, 음성 대화입니다.
+
+[개발 로드맵](./ROADMAP.md) · [개발 환경 안내](./DEVELOPMENT.md)
 
 ---
 
